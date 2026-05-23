@@ -1,0 +1,24 @@
+{
+  "name": "splitsmart-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-powered intelligent expense splitting platform.",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace server\" \"npm run dev --workspace client\"",
+    "build": "npm run build --workspace client",
+    "test": "npm run test --workspace server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "cloudinary": "^2.10.0",
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.7",
+    "pg": "^8.21.0"
+  }
+}
