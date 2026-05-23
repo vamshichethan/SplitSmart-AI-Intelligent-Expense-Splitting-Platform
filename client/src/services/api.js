@@ -55,6 +55,12 @@ export async function addGroupMember(groupId, payload) {
   });
 }
 
+export async function removeGroupMember(groupId, userId) {
+  return request(`/groups/${groupId}/members/${userId}`, {
+    method: "DELETE"
+  });
+}
+
 export async function createExpense(groupId, payload) {
   return request(`/groups/${groupId}/expenses`, {
     method: "POST",
@@ -62,9 +68,21 @@ export async function createExpense(groupId, payload) {
   });
 }
 
-export async function mockExtractReceipt() {
-  return request("/receipts/mock-extract", {
-    method: "POST"
+export async function extractReceipt(payload) {
+  return request("/receipts/extract", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function uploadReceiptImage(file) {
+  const formData = new FormData();
+  formData.append("receipt", file);
+
+  return request("/receipts/upload", {
+    method: "POST",
+    body: formData,
+    isFormData: true
   });
 }
 
@@ -77,6 +95,20 @@ export async function createReceiptExpense(groupId, payload) {
 
 export async function createUpiIntent(groupId, payload) {
   return request(`/groups/${groupId}/payments/upi-intent`, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function createRazorpayOrder(payload) {
+  return request("/payments/razorpay/order", {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function confirmRazorpayPayment(groupId, payload) {
+  return request(`/groups/${groupId}/payments/razorpay/confirm`, {
     method: "POST",
     body: payload
   });
@@ -102,6 +134,13 @@ export async function createDispute(expenseId, payload) {
   });
 }
 
+export async function addDisputeComment(disputeId, payload) {
+  return request(`/disputes/${disputeId}/comments`, {
+    method: "POST",
+    body: payload
+  });
+}
+
 export async function resolveDispute(disputeId, payload) {
   return request(`/disputes/${disputeId}/resolve`, {
     method: "PATCH",
@@ -115,15 +154,16 @@ export async function getAiInsights(groupId) {
 
 async function request(path, options = {}) {
   const session = getStoredSession();
+  const isFormData = options.isFormData || options.body instanceof FormData;
   const headers = {
-    ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...(options.body && !isFormData ? { "Content-Type": "application/json" } : {}),
     ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {})
   };
 
   const response = await fetch(`${API_BASE}${path}`, {
     method: options.method ?? "GET",
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined
+    body: options.body ? (isFormData ? options.body : JSON.stringify(options.body)) : undefined
   });
 
   return parseResponse(response);

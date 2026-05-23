@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { Router } from "express";
 import { z } from "zod";
-import { users } from "../data.js";
+import { groups, users } from "../data.js";
 import { requireAuth, signSession } from "../middleware/auth.js";
 import { initialsFor, publicUser } from "../utils/users.js";
 
@@ -57,6 +57,15 @@ authRouter.post("/register", async (req, res) => {
   };
 
   users.push(user);
+  groups.push({
+    id: `g${groups.length + 1}`,
+    name: `${parsed.data.name}'s group`,
+    type: "Friends",
+    currency: "INR",
+    createdAt: new Date().toISOString().slice(0, 10),
+    memberIds: [user.id]
+  });
+
   res.status(201).json({ token: signSession(user), user: publicUser(user) });
 });
 

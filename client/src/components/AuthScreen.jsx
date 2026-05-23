@@ -5,9 +5,9 @@ import { login, register } from "../services/api";
 export function AuthScreen({ onAuthenticated }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({
-    name: "Vamshi",
-    email: "vamshi@example.com",
-    password: "password123"
+    name: "",
+    email: "",
+    password: ""
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,13 +48,13 @@ export function AuthScreen({ onAuthenticated }) {
           </div>
         </div>
         <div>
-          <p>Demo account</p>
-          <h1>Track bills, balances, disputes, and settlements behind a real session.</h1>
+          <p>Group expense workspace</p>
+          <h1>Start with your people, then split bills without the spreadsheet mess.</h1>
         </div>
         <div className="auth-highlights">
           <span>JWT session</span>
           <span>Protected API</span>
-          <span>Receipt AI mock</span>
+          <span>Gemini receipt parsing</span>
         </div>
       </section>
 
@@ -74,16 +74,16 @@ export function AuthScreen({ onAuthenticated }) {
           {mode === "register" ? (
             <label>
               Name
-              <input name="name" value={form.name} onChange={updateField} />
+              <input name="name" value={form.name} onChange={updateField} placeholder="Your name" />
             </label>
           ) : null}
           <label>
             Email
-            <input name="email" type="email" value={form.email} onChange={updateField} />
+            <input name="email" type="email" value={form.email} onChange={updateField} placeholder="you@example.com" />
           </label>
           <label>
             Password
-            <input name="password" type="password" value={form.password} onChange={updateField} />
+            <input name="password" type="password" value={form.password} onChange={updateField} placeholder="Minimum 6 characters" />
           </label>
 
           {error ? <div className="error-banner">{error}</div> : null}

@@ -1,4 +1,5 @@
-import { CheckCircle2, Link as LinkIcon, WalletCards } from "lucide-react";
+import { Banknote, Copy, CreditCard, Landmark, Smartphone, WalletCards } from "lucide-react";
+import { useState } from "react";
 
 const currency = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -6,7 +7,27 @@ const currency = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0
 });
 
-export function SettlementPanel({ settlements, payments, onCreateUpi, onMarkPaid, activePaymentKey, upiIntent }) {
+export function SettlementPanel({
+  settlements,
+  payments,
+  onCreateUpi,
+  onCreateRazorpay,
+  onConfirmMockRazorpay,
+  onMarkPaid,
+  activePaymentKey,
+  upiIntent,
+  razorpayOrder
+}) {
+  const [copiedKey, setCopiedKey] = useState("");
+
+  async function copyUpiIntent(key, upiIntent) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(upiIntent);
+    }
+    setCopiedKey(key);
+    window.setTimeout(() => setCopiedKey(""), 1600);
+  }
+
   return (
     <div className="settlement-workflow">
       <div className="settlement-list">
@@ -20,19 +41,41 @@ export function SettlementPanel({ settlements, payments, onCreateUpi, onMarkPaid
                   <span>pays {settlement.toUser.name}</span>
                 </div>
                 <strong>{currency.format(settlement.amount)}</strong>
-                <div className="settlement-actions">
-                  <button className="icon-button" onClick={() => onCreateUpi(settlement)} aria-label={`Create UPI link for ${settlement.fromUser.name}`}>
-                    <LinkIcon size={18} />
+                <div className="settlement-actions" aria-label={`Payment methods for ${settlement.fromUser.name}`}>
+                  <button className="payment-method-button" onClick={() => onCreateUpi(settlement)} type="button">
+                    <Smartphone size={17} />
+                    UPI
                   </button>
-                  <button className="icon-button" onClick={() => onMarkPaid(settlement)} aria-label={`Mark paid by ${settlement.fromUser.name}`}>
-                    <CheckCircle2 size={18} />
+                  <button className="payment-method-button" onClick={() => onCreateRazorpay(settlement)} type="button">
+                    <CreditCard size={17} />
+                    Card
+                  </button>
+                  <button className="payment-method-button" onClick={() => onCreateRazorpay(settlement)} type="button">
+                    <Landmark size={17} />
+                    Netbanking
+                  </button>
+                  <button className="payment-method-button" onClick={() => onMarkPaid(settlement)} type="button">
+                    <Banknote size={17} />
+                    Cash
                   </button>
                 </div>
                 {activePaymentKey === key && upiIntent ? (
-                  <a className="upi-link" href={upiIntent}>
-                    <WalletCards size={16} />
-                    Open UPI intent
-                  </a>
+                  <button className="upi-link" type="button" onClick={() => copyUpiIntent(key, upiIntent)}>
+                    <Copy size={16} />
+                    {copiedKey === key ? "UPI link copied" : "Copy UPI intent"}
+                  </button>
+                ) : null}
+                {activePaymentKey === key && razorpayOrder ? (
+                  <div className="payment-provider-card">
+                    <span>{razorpayOrder.provider === "mock" ? "Razorpay mock order" : "Razorpay checkout started"}</span>
+                    <strong>{razorpayOrder.id}</strong>
+                    {razorpayOrder.provider === "mock" ? (
+                      <button className="payment-confirm-button" type="button" onClick={() => onConfirmMockRazorpay(settlement, razorpayOrder)}>
+                        <WalletCards size={16} />
+                        Complete mock online payment
+                      </button>
+                    ) : null}
+                  </div>
                 ) : null}
               </article>
             );

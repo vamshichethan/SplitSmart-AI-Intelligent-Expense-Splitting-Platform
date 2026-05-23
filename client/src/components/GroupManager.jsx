@@ -1,8 +1,18 @@
-import { Plus, UserPlus } from "lucide-react";
+import { Plus, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 
-export function GroupManager({ groups, activeGroupId, users, onSelectGroup, onCreateGroup, onAddMember, isSaving }) {
-  const [groupForm, setGroupForm] = useState({ name: "Weekend Trek", type: "Trip" });
+export function GroupManager({
+  groups,
+  activeGroupId,
+  users,
+  onSelectGroup,
+  onCreateGroup,
+  onAddMember,
+  onRemoveMember,
+  currentUserId,
+  isSaving
+}) {
+  const [groupForm, setGroupForm] = useState({ name: "", type: "Friends" });
   const [memberForm, setMemberForm] = useState({ mode: "new", userId: users[0]?.id ?? "", name: "", email: "" });
   const activeGroup = groups.find((group) => group.id === activeGroupId);
   const availableUsers = users.filter((user) => !activeGroup?.memberIds.includes(user.id));
@@ -139,6 +149,32 @@ export function GroupManager({ groups, activeGroupId, users, onSelectGroup, onCr
           <UserPlus size={18} />
         </button>
       </form>
+
+      <div className="member-roster" aria-label="Current members">
+        {activeGroup?.members.map((member) => {
+          const canRemove = activeGroup.members.length > 1 && member.id !== currentUserId;
+
+          return (
+            <article key={member.id}>
+              <span>{member.avatar}</span>
+              <div>
+                <strong>{member.name}</strong>
+                <small>{member.email}</small>
+              </div>
+              <button
+                className="icon-button danger"
+                type="button"
+                onClick={() => onRemoveMember(member.id)}
+                aria-label={`Remove ${member.name}`}
+                disabled={isSaving || !canRemove}
+                title={canRemove ? `Remove ${member.name}` : "Current user or last member cannot be removed"}
+              >
+                <Trash2 size={16} />
+              </button>
+            </article>
+          );
+        })}
+      </div>
     </div>
   );
 }

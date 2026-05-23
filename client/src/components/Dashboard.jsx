@@ -14,18 +14,23 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
+  addDisputeComment,
   addGroupMember,
   createExpense,
   createGroup,
   createReceiptExpense,
   createDispute,
+  createRazorpayOrder,
   createUpiIntent,
+  confirmRazorpayPayment,
+  extractReceipt as extractReceiptFromApi,
   getAiInsights,
   getDashboard,
   markSettlementPaid,
-  mockExtractReceipt,
+  removeGroupMember,
   resolveDispute,
-  sendExpenseReminders
+  sendExpenseReminders,
+  uploadReceiptImage
 } from "../services/api";
 import { ExpenseForm } from "./ExpenseForm";
 import { GroupManager } from "./GroupManager";
@@ -40,16 +45,38 @@ const currency = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0
 });
 
+function loadRazorpayCheckout() {
+  if (window.Razorpay) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener("load", resolve, { once: true });
+      existingScript.addEventListener("error", reject, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Could not load Razorpay Checkout."));
+    document.body.appendChild(script);
+  });
+}
+
 export function Dashboard({ session, onLogout }) {
   const [data, setData] = useState(null);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [receipt, setReceipt] = useState(null);
   const [aiInsights, setAiInsights] = useState(null);
   const [upiIntent, setUpiIntent] = useState("");
+  const [razorpayOrder, setRazorpayOrder] = useState(null);
   const [activePaymentKey, setActivePaymentKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isGroupSaving, setIsGroupSaving] = useState(false);
   const [isReceiptSaving, setIsReceiptSaving] = useState(false);
+  const [isReceiptUploading, setIsReceiptUploading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState("");
 
@@ -106,14 +133,40 @@ export function Dashboard({ session, onLogout }) {
     }
   }
 
-  async function extractReceipt() {
+  async function extractReceipt(receiptText = "") {
     setIsExtracting(true);
     try {
-      setReceipt(await mockExtractReceipt());
+      setReceipt(await extractReceiptFromApi({ receiptText }));
     } catch (requestError) {
       setError(requestError.message);
     } finally {
       setIsExtracting(false);
+    }
+  }
+
+  async function uploadReceipt(file) {
+    setIsReceiptUploading(true);
+    try {
+      setError("");
+      return await uploadReceiptImage(file);
+    } catch (requestError) {
+      setError(requestError.message);
+      throw requestError;
+    } finally {
+      setIsReceiptUploading(false);
+    }
+  }
+
+  async function removeMember(userId) {
+    setIsGroupSaving(true);
+    try {
+      const nextData = await removeGroupMember(data.activeGroup.id, userId);
+      setData(nextData);
+      setSelectedGroupId(nextData.activeGroup.id);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsGroupSaving(false);
     }
   }
 
@@ -140,10 +193,99 @@ export function Dashboard({ session, onLogout }) {
         amount: settlement.amount
       });
       setUpiIntent(response.upiIntent);
+      setRazorpayOrder(null);
       setActivePaymentKey(settlementKey(settlement));
     } catch (requestError) {
       setError(requestError.message);
     }
+  }
+
+  async function requestRazorpayOrder(settlement) {
+    try {
+      setError("");
+      const response = await createRazorpayOrder({
+        amount: settlement.amount,
+        receipt: `${data.activeGroup.id}_${settlement.from}_${settlement.to}_${Date.now()}`
+      });
+      setRazorpayOrder(response);
+      setUpiIntent("");
+      setActivePaymentKey(settlementKey(settlement));
+
+      if (response.provider === "razorpay") {
+        await openRazorpayCheckout(settlement, response);
+      }
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  async function confirmMockRazorpayPayment(settlement, order) {
+    try {
+      setError("");
+      const nextData = await confirmRazorpayPayment(data.activeGroup.id, {
+        from: settlement.from,
+        to: settlement.to,
+        amount: settlement.amount,
+        orderId: order.id,
+        paymentId: `pay_mock_${Date.now()}`
+      });
+      setData(nextData);
+      setSelectedGroupId(nextData.activeGroup.id);
+      setRazorpayOrder(null);
+      setActivePaymentKey("");
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  async function openRazorpayCheckout(settlement, order) {
+    await loadRazorpayCheckout();
+
+    const payer = settlement.fromUser;
+    const receiver = settlement.toUser;
+    const checkout = new window.Razorpay({
+      key: order.keyId,
+      amount: order.amount,
+      currency: order.currency ?? "INR",
+      name: "SplitSmart AI",
+      description: `${payer.name} pays ${receiver.name}`,
+      order_id: order.id,
+      prefill: {
+        name: payer.name,
+        email: payer.email
+      },
+      notes: {
+        groupId: data.activeGroup.id,
+        from: settlement.from,
+        to: settlement.to
+      },
+      theme: {
+        color: "#0f766e"
+      },
+      handler: async (payment) => {
+        try {
+          const nextData = await confirmRazorpayPayment(data.activeGroup.id, {
+            from: settlement.from,
+            to: settlement.to,
+            amount: settlement.amount,
+            orderId: payment.razorpay_order_id,
+            paymentId: payment.razorpay_payment_id,
+            signature: payment.razorpay_signature
+          });
+          setData(nextData);
+          setSelectedGroupId(nextData.activeGroup.id);
+          setRazorpayOrder(null);
+          setActivePaymentKey("");
+        } catch (requestError) {
+          setError(requestError.message);
+        }
+      },
+      modal: {
+        ondismiss: () => setError("Razorpay checkout was closed before payment completion.")
+      }
+    });
+
+    checkout.open();
   }
 
   async function completeSettlement(settlement) {
@@ -174,12 +316,23 @@ export function Dashboard({ session, onLogout }) {
     }
   }
 
-  async function disputeExpense(expense) {
+  async function disputeExpense(expense, reason = `Review requested for ${expense.title}.`) {
     try {
       setError("");
       const nextData = await createDispute(expense.id, {
-        reason: `Review requested for ${expense.title}.`
+        reason
       });
+      setData(nextData);
+      setSelectedGroupId(nextData.activeGroup.id);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  async function commentOnDispute(disputeId, message) {
+    try {
+      setError("");
+      const nextData = await addDisputeComment(disputeId, { message });
       setData(nextData);
       setSelectedGroupId(nextData.activeGroup.id);
     } catch (requestError) {
@@ -313,6 +466,8 @@ export function Dashboard({ session, onLogout }) {
               onSelectGroup={setSelectedGroupId}
               onCreateGroup={saveGroup}
               onAddMember={saveMember}
+              onRemoveMember={removeMember}
+              currentUserId={data.currentUser.id}
               isSaving={isGroupSaving}
             />
           </div>
@@ -365,9 +520,12 @@ export function Dashboard({ session, onLogout }) {
               settlements={data.settlements}
               payments={data.payments}
               onCreateUpi={requestUpiIntent}
+              onCreateRazorpay={requestRazorpayOrder}
+              onConfirmMockRazorpay={confirmMockRazorpayPayment}
               onMarkPaid={completeSettlement}
               activePaymentKey={activePaymentKey}
               upiIntent={upiIntent}
+              razorpayOrder={razorpayOrder}
             />
           </div>
 
@@ -377,15 +535,17 @@ export function Dashboard({ session, onLogout }) {
                 <p>Receipt scanner</p>
                 <h2>Item-wise extraction</h2>
               </div>
-              <button className="icon-button" onClick={extractReceipt} aria-label="Extract receipt">
+              <button className="icon-button" onClick={() => extractReceipt()} aria-label="Extract receipt">
                 <ScanLine size={18} />
               </button>
             </div>
             <ReceiptScanner
               group={data.activeGroup}
               receipt={receipt}
+              onUpload={uploadReceipt}
               onExtract={extractReceipt}
               onSave={saveReceiptExpense}
+              isUploading={isReceiptUploading}
               isExtracting={isExtracting}
               isSaving={isReceiptSaving}
             />
@@ -463,6 +623,10 @@ export function Dashboard({ session, onLogout }) {
             <WorkflowPanel
               notifications={data.notifications}
               disputes={data.disputes}
+              expenses={data.expenses}
+              onSendReminder={remindExpense}
+              onCreateDispute={disputeExpense}
+              onAddComment={commentOnDispute}
               onResolveDispute={finishDispute}
             />
           </div>

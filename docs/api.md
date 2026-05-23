@@ -15,11 +15,12 @@ The first implementation uses an in-memory data store so the app is runnable bef
 - `POST /api/groups/:groupId/members` adds an existing user with `userId` or creates a custom member with `name` and optional `email`.
 - `POST /api/groups/:groupId/expenses` creates an `equal`, `custom`, or `percentage` split expense.
 - `POST /api/receipts/mock-extract` returns a mock structured receipt extraction.
-- `POST /api/receipts/upload` uploads a receipt image to Cloudinary when configured.
+- `POST /api/receipts/upload` uploads a multipart `receipt` image to Cloudinary when configured, or returns local upload metadata when Cloudinary keys are absent.
 - `POST /api/groups/:groupId/receipts/item-wise-expense` creates an item-wise expense from extracted receipt items.
 - `POST /api/groups/:groupId/payments/upi-intent` creates a pending UPI intent link for an outstanding settlement.
 - `POST /api/groups/:groupId/payments/manual` marks an outstanding settlement as completed.
 - `POST /api/payments/razorpay/order` creates a Razorpay test order when configured.
+- `POST /api/groups/:groupId/payments/razorpay/confirm` verifies a Razorpay payment signature and marks the outstanding settlement as completed.
 - `POST /api/expenses/:expenseId/reminders` logs payment reminders for owing members.
 - `POST /api/expenses/:expenseId/disputes` raises a dispute for an expense.
 - `POST /api/disputes/:disputeId/comments` appends a dispute comment.

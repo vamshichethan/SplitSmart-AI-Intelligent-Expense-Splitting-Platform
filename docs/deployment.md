@@ -2,13 +2,19 @@
 
 This project is ready for separate frontend and backend deployment.
 
+Live URLs:
+
+- Frontend: `https://splitsmart-ai-client.vercel.app`
+- Backend API: `https://splitsmart-ai-api.onrender.com`
+- Health check: `https://splitsmart-ai-api.onrender.com/api/health`
+
 ## Frontend
 
 Recommended: Vercel or Netlify.
 
 - Build command: `npm run build --workspace client`
 - Output directory: `client/dist`
-- Environment variable: `VITE_API_BASE_URL=https://your-api-host.example.com/api`
+- Environment variable: `VITE_API_BASE_URL=https://splitsmart-ai-api.onrender.com/api`
 
 ## Backend
 
@@ -26,7 +32,7 @@ Recommended: Render, Railway, or Fly.io.
 - `GEMINI_API_KEY`: receipt normalization and AI spending insights.
 - `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`: test payment orders.
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`: receipt image uploads.
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`: reminder emails.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`: reminder emails. For Brevo, use `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=587`, `SMTP_USER=<Brevo SMTP login>`, and `SMTP_PASS=<Brevo SMTP key>`.
 - Optional: WhatsApp/SMS provider credentials for payment reminders.
 
 ## Next Production Hardening

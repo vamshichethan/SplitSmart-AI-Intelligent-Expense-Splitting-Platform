@@ -6,7 +6,8 @@ import { requireAuth } from "../middleware/auth.js";
 import { generateAiInsights } from "../services/aiInsights.js";
 import { uploadReceiptImage } from "../services/cloudinary.js";
 import { sendReminderEmail } from "../services/email.js";
-import { createRazorpayOrder } from "../services/razorpay.js";
+import { extractReceiptDetails } from "../services/receiptExtraction.js";
+import { createRazorpayOrder, verifyRazorpaySignature } from "../services/razorpay.js";
 import { buildGroupAnalytics } from "../utils/analytics.js";
 import { applySettlementPayments, createUpiIntentLink, findOutstandingSettlement } from "../utils/payments.js";
 import { buildItemWiseExpense, ReceiptValidationError } from "../utils/receiptSplits.js";
@@ -51,6 +52,10 @@ const addMemberSchema = z
     message: "Provide an existing user or new member details."
   });
 
+const receiptExtractionSchema = z.object({
+  receiptText: z.string().max(6000).optional()
+});
+
 const saveReceiptExpenseSchema = z.object({
   paidBy: z.string(),
   receipt: z.object({
@@ -80,6 +85,12 @@ const razorpayOrderSchema = z.object({
   receipt: z.string().min(1).max(80).optional()
 });
 
+const razorpaySettlementSchema = settlementPaymentSchema.extend({
+  orderId: z.string().min(1),
+  paymentId: z.string().min(1),
+  signature: z.string().optional()
+});
+
 const createDisputeSchema = z.object({
   reason: z.string().min(5).max(500)
 });
@@ -100,8 +111,10 @@ overviewRouter.get("/health", (_req, res) => {
 overviewRouter.use(requireAuth);
 
 overviewRouter.get("/dashboard", (req, res) => {
-  const requestedGroup = groups.find((group) => group.id === req.query.groupId);
-  res.json(buildGroupDashboard(req.user, requestedGroup ?? groups[0]));
+  const visibleGroups = groups.filter((group) => group.memberIds.includes(req.user.id));
+  const requestedGroup = visibleGroups.find((group) => group.id === req.query.groupId);
+  const activeGroup = requestedGroup ?? visibleGroups[0] ?? createStarterGroup(req.user);
+  res.json(buildGroupDashboard(req.user, activeGroup));
 });
 
 overviewRouter.get("/groups/:groupId", (req, res) => {
@@ -163,6 +176,37 @@ overviewRouter.post("/groups/:groupId/members", (req, res) => {
   }
 
   res.status(201).json(buildGroupDashboard(req.user, group));
+});
+
+overviewRouter.delete("/groups/:groupId/members/:userId", (req, res) => {
+  const group = groups.find((item) => item.id === req.params.groupId);
+  if (!group) {
+    res.status(404).json({ error: "Group not found" });
+    return;
+  }
+
+  if (!group.memberIds.includes(req.user.id)) {
+    res.status(403).json({ error: "You can only manage groups you belong to." });
+    return;
+  }
+
+  if (group.memberIds.length <= 1) {
+    res.status(400).json({ error: "A group needs at least one member." });
+    return;
+  }
+
+  if (!group.memberIds.includes(req.params.userId)) {
+    res.status(404).json({ error: "Member not found in this group." });
+    return;
+  }
+
+  if (memberHasGroupActivity(group.id, req.params.userId)) {
+    res.status(400).json({ error: "Members with expenses, splits, payments, or disputes cannot be removed from this group." });
+    return;
+  }
+
+  group.memberIds = group.memberIds.filter((id) => id !== req.params.userId);
+  res.json(buildGroupDashboard(req.user, group));
 });
 
 overviewRouter.post("/groups/:groupId/expenses", (req, res) => {
@@ -236,6 +280,20 @@ overviewRouter.post("/receipts/mock-extract", (_req, res) => {
       { name: "Chocolate Brownie", price: 840 }
     ]
   });
+});
+
+overviewRouter.post("/receipts/extract", async (req, res, next) => {
+  try {
+    const parsed = receiptExtractionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    res.json(await extractReceiptDetails(parsed.data.receiptText));
+  } catch (error) {
+    next(error);
+  }
 });
 
 overviewRouter.post("/receipts/upload", upload.single("receipt"), async (req, res, next) => {
@@ -352,6 +410,53 @@ overviewRouter.post("/payments/razorpay/order", async (req, res, next) => {
   }
 });
 
+overviewRouter.post("/groups/:groupId/payments/razorpay/confirm", (req, res) => {
+  const group = groups.find((item) => item.id === req.params.groupId);
+  if (!group) {
+    res.status(404).json({ error: "Group not found" });
+    return;
+  }
+
+  const parsed = razorpaySettlementSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const settlement = validateOutstandingSettlement(group, parsed.data);
+  if ("error" in settlement) {
+    res.status(400).json({ error: settlement.error });
+    return;
+  }
+
+  const isVerified = verifyRazorpaySignature({
+    orderId: parsed.data.orderId,
+    paymentId: parsed.data.paymentId,
+    signature: parsed.data.signature
+  });
+
+  if (!isVerified) {
+    res.status(400).json({ error: "Razorpay payment signature could not be verified." });
+    return;
+  }
+
+  const payment = {
+    id: `p${payments.length + 1}`,
+    groupId: group.id,
+    from: parsed.data.from,
+    to: parsed.data.to,
+    amount: parsed.data.amount,
+    method: "razorpay",
+    status: "completed",
+    providerPaymentId: parsed.data.paymentId,
+    providerOrderId: parsed.data.orderId,
+    createdAt: new Date().toISOString()
+  };
+
+  payments.unshift(payment);
+  res.status(201).json(buildGroupDashboard(req.user, group));
+});
+
 overviewRouter.post("/groups/:groupId/payments/manual", (req, res) => {
   const group = groups.find((item) => item.id === req.params.groupId);
   if (!group) {
@@ -405,7 +510,9 @@ overviewRouter.post("/expenses/:expenseId/reminders", async (req, res, next) => 
       reminders.push({
         id: `n${notifications.length + reminders.length + 1}`,
         ...reminder,
-        status: emailResult.skipped ? "sent" : "email_sent",
+        status: emailResult.skipped ? "smtp_not_configured" : "email_sent",
+        provider: emailResult.skipped ? "local" : "smtp",
+        providerMessage: emailResult.reason ?? emailResult.messageId,
         createdAt: new Date().toISOString()
       });
     }
@@ -511,6 +618,8 @@ overviewRouter.patch("/disputes/:disputeId/resolve", (req, res) => {
 });
 
 function buildGroupDashboard(currentUser, group) {
+  const visibleGroups = groups.filter((item) => item.memberIds.includes(currentUser.id));
+  const visibleUserIds = new Set([currentUser.id, ...visibleGroups.flatMap((item) => item.memberIds)]);
   const activeGroup = hydrateGroup(group);
   const groupExpenses = expenses.filter((expense) => expense.groupId === activeGroup.id);
   const groupPayments = payments.filter((payment) => payment.groupId === activeGroup.id);
@@ -520,8 +629,8 @@ function buildGroupDashboard(currentUser, group) {
 
   return {
     currentUser: publicUser(currentUser),
-    users: users.map(publicUser),
-    groups: groups.map(hydrateGroup),
+    users: users.filter((user) => visibleUserIds.has(user.id)).map(publicUser),
+    groups: visibleGroups.map(hydrateGroup),
     activeGroup,
     expenses: groupExpenses.map(hydrateExpense),
     balances: balances.map(withUser),
@@ -537,6 +646,37 @@ function buildGroupDashboard(currentUser, group) {
       members: activeGroup.members
     })
   };
+}
+
+function createStarterGroup(user) {
+  const group = {
+    id: `g${groups.length + 1}`,
+    name: `${user.name}'s group`,
+    type: "Friends",
+    currency: "INR",
+    createdAt: new Date().toISOString().slice(0, 10),
+    memberIds: [user.id]
+  };
+  groups.push(group);
+  return group;
+}
+
+function memberHasGroupActivity(groupId, userId) {
+  const groupExpenses = expenses.filter((expense) => expense.groupId === groupId);
+  return (
+    groupExpenses.some(
+      (expense) =>
+        expense.paidBy === userId ||
+        expense.splits.some((split) => split.userId === userId) ||
+        expense.receiptItems.some((item) => item.assignedTo.includes(userId))
+    ) ||
+    payments.some((payment) => payment.groupId === groupId && (payment.from === userId || payment.to === userId)) ||
+    disputes.some((dispute) => {
+      const expense = expenses.find((item) => item.id === dispute.expenseId);
+      return expense?.groupId === groupId && dispute.raisedBy === userId;
+    }) ||
+    notifications.some((notification) => notification.groupId === groupId && notification.userId === userId)
+  );
 }
 
 function validateOutstandingSettlement(group, payload) {

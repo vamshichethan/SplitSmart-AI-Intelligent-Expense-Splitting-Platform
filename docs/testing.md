@@ -11,7 +11,7 @@ The server test suite covers:
 
 - Auth session signing and seeded login.
 - Expense split calculations.
-- Item-wise receipt splitting.
+- Item-wise receipt splitting and receipt image upload UI.
 - Settlement payment balance application.
 - Reminder generation.
 - Analytics and insight aggregation.

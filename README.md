@@ -21,6 +21,8 @@
 
 **A production-style full-stack project built to demonstrate real SDE skills: authentication, database design, AI/OCR, payments, graph algorithms, analytics, notifications, and dispute workflows.**
 
+[Live Deployment](#-live-deployment) •
+[Environment](#-environment-configuration) •
 [Core Idea](#-core-idea) •
 [Features](#-features) •
 [Tech Stack](#-tech-stack) •
@@ -30,6 +32,67 @@
 [Resume Impact](#-resume-impact)
 
 </div>
+
+---
+
+## 🚀 Live Deployment
+
+| Layer | URL |
+| --- | --- |
+| Frontend | https://splitsmart-ai-client.vercel.app |
+| Backend API | https://splitsmart-ai-api.onrender.com |
+| Health Check | https://splitsmart-ai-api.onrender.com/api/health |
+| GitHub | https://github.com/vamshichethan/SplitSmart-AI-Intelligent-Expense-Splitting-Platform |
+
+Demo login:
+
+```text
+email: vamshi@example.com
+password: password123
+```
+
+Production deployment uses Vercel for the React client and Render for the Express API. The API supports durable state snapshots through PostgreSQL when `DATABASE_URL` is configured, and safely falls back to in-memory demo data for local development.
+
+## ✅ Current Production Features
+
+- JWT authentication with bcrypt password hashing and protected API routes.
+- Customer-ready onboarding: new users start with their own empty group instead of hardcoded demo members.
+- Group creation, member add/remove, expense entry, equal/custom/percentage/item-wise splits.
+- Receipt image upload through Cloudinary and receipt text extraction through Gemini.
+- Settlement graph engine that minimizes repayment transactions.
+- Real-world settlement actions: UPI intent copy, Razorpay Checkout for card/UPI/netbanking, and cash/manual confirmation.
+- Razorpay payment confirmation endpoint with signature verification when live/test keys are configured.
+- Brevo SMTP-compatible reminder emails with reminder history.
+- Dispute creation, comment threads, resolution workflow, analytics charts, and Gemini spending insights.
+
+## 🔐 Environment Configuration
+
+### Frontend
+
+| Variable | Example | Purpose |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | `https://splitsmart-ai-api.onrender.com/api` | Points the Vercel frontend to the Render API |
+
+### Backend
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `CLIENT_ORIGIN` | Yes | Comma-separated allowed frontend origins for CORS |
+| `JWT_SECRET` | Yes | Signs JWT sessions |
+| `DATABASE_URL` | Recommended | PostgreSQL state persistence |
+| `GEMINI_API_KEY` | Optional | Gemini receipt extraction and AI insights |
+| `GEMINI_MODEL` | Optional | Defaults to `gemini-2.0-flash` |
+| `RAZORPAY_KEY_ID` | Optional | Razorpay Checkout test/live key id |
+| `RAZORPAY_KEY_SECRET` | Optional | Razorpay order auth and signature verification |
+| `CLOUDINARY_CLOUD_NAME` | Optional | Receipt image storage |
+| `CLOUDINARY_API_KEY` | Optional | Receipt image storage |
+| `CLOUDINARY_API_SECRET` | Optional | Receipt image storage |
+| `SMTP_HOST` | Optional | Brevo: `smtp-relay.brevo.com` |
+| `SMTP_PORT` | Optional | Brevo: `587` |
+| `SMTP_USER` | Optional | Brevo SMTP login |
+| `SMTP_PASS` | Optional | Brevo SMTP key |
+
+Missing optional provider keys do not break local development. The app uses safe local/mock fallbacks for AI, Razorpay, Cloudinary, and email while clearly showing provider status in the UI.
 
 ---
 
@@ -137,11 +200,12 @@ flowchart LR
 
 | Payment Flow | Status |
 | --- | --- |
-| 🧪 Razorpay test mode | Planned |
-| 🇮🇳 UPI intent links | Planned |
-| ✅ Mark as paid | Planned |
-| 📜 Payment history | Planned |
-| 🧾 Settlement receipt | Planned |
+| 🧪 Razorpay test mode | Implemented |
+| 🇮🇳 UPI intent links | Implemented |
+| ✅ Card / UPI / netbanking checkout | Implemented through Razorpay Checkout |
+| ✅ Cash / manual confirmation | Implemented |
+| 📜 Payment history | Implemented |
+| 🧾 Settlement receipt | Roadmap |
 
 ### 7. ⚖️ Dispute System
 
@@ -206,11 +270,10 @@ AI-generated insights can explain behavior in natural language:
 | Technology | Purpose |
 | --- | --- |
 | ⚛️ React | Frontend UI |
-| 🎨 Tailwind CSS | Styling |
-| 🧭 React Router | Routing |
-| 🔄 Axios / TanStack Query | API communication |
+| 🎨 CSS Modules / Custom CSS | Responsive dashboard styling |
+| 🔄 Fetch API | API communication |
 | 📊 Recharts | Analytics charts |
-| ✅ React Hook Form + Zod | Forms and validation |
+| ✅ Vite | Production build tooling |
 
 ### Backend
 
@@ -229,11 +292,11 @@ AI-generated insights can explain behavior in natural language:
 | Technology | Purpose |
 | --- | --- |
 | 🐘 PostgreSQL | Relational database |
-| 🔷 Prisma ORM | Schema and migrations |
-| 🤖 Gemini API / OpenAI API | AI extraction and insights |
-| 👁️ Google Vision / Tesseract.js | OCR |
-| 💳 Razorpay | Test payment flow |
-| ☁️ Cloudinary / S3 | Receipt storage |
+| 🧾 PostgreSQL snapshot persistence | Durable deployed demo state |
+| 🤖 Gemini API | AI receipt extraction and insights |
+| 💳 Razorpay | Test/live checkout orders and signature verification |
+| ☁️ Cloudinary | Receipt image storage |
+| 📧 Brevo SMTP | Email reminders |
 
 ---
 
@@ -313,14 +376,13 @@ erDiagram
 | Module | Sample Routes |
 | --- | --- |
 | 🔐 Auth | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` |
-| 👤 Users | `GET /api/users/search`, `PATCH /api/users/me` |
 | 🏘️ Groups | `POST /api/groups`, `GET /api/groups/:groupId` |
-| 💰 Expenses | `POST /api/groups/:groupId/expenses`, `GET /api/expenses/:expenseId` |
-| 🧾 Receipts | `POST /api/receipts/upload`, `POST /api/receipts/:id/extract` |
-| 🔁 Settlements | `GET /api/groups/:id/balances`, `POST /api/groups/:id/simplify` |
-| 💳 Payments | `POST /api/payments/razorpay/order`, `POST /api/payments/upi-intent` |
+| 💰 Expenses | `POST /api/groups/:groupId/expenses`, `POST /api/groups/:groupId/receipts/item-wise-expense` |
+| 🧾 Receipts | `POST /api/receipts/upload`, `POST /api/receipts/extract` |
+| 🔁 Settlements | `GET /api/groups/:groupId`, dashboard balances and settlement simplification |
+| 💳 Payments | `POST /api/payments/razorpay/order`, `POST /api/groups/:groupId/payments/razorpay/confirm`, `POST /api/groups/:groupId/payments/upi-intent`, `POST /api/groups/:groupId/payments/manual` |
 | ⚖️ Disputes | `POST /api/expenses/:id/disputes`, `PATCH /api/disputes/:id/resolve` |
-| 📊 Analytics | `GET /api/analytics/monthly`, `GET /api/analytics/insights` |
+| 📊 Analytics | `GET /api/groups/:groupId/analytics/ai-insights` |
 
 ---
 
@@ -517,7 +579,9 @@ SplitSmart AI: Medium-Hard, Resume-Ready, Interview-Friendly
 
 ## ⭐ Project Status
 
-**Planning and architecture phase completed.**
+**Production-ready deployed MVP.**
+
+The current build is a working full-stack deployment with authentication, group/member workflows, receipt uploads, Gemini-backed extraction and insights, Razorpay/UPI/manual settlement flows, Brevo-compatible reminders, disputes, analytics, tests, and deployment configuration.
 
 The repository now contains a complete product vision, system architecture, database plan, API modules, implementation phases, and resume positioning for building SplitSmart AI into a placement-level full-stack project.
 
