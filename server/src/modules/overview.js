@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
-import { disputes, expenses, groups, users } from "../data.js";
+import { disputes, expenses, groups, payments, users } from "../data.js";
 import { requireAuth } from "../middleware/auth.js";
+import { applySettlementPayments, createUpiIntentLink, findOutstandingSettlement } from "../utils/payments.js";
 import { buildItemWiseExpense, ReceiptValidationError } from "../utils/receiptSplits.js";
 import { calculateNetBalances, simplifySettlements } from "../utils/settlements.js";
 import { buildExpenseSplits, SplitValidationError } from "../utils/splits.js";
@@ -54,6 +55,12 @@ const saveReceiptExpenseSchema = z.object({
       })
     )
   })
+});
+
+const settlementPaymentSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  amount: z.number().positive()
 });
 
 overviewRouter.get("/health", (_req, res) => {
@@ -243,10 +250,84 @@ overviewRouter.post("/groups/:groupId/receipts/item-wise-expense", (req, res) =>
   res.status(201).json(buildGroupDashboard(req.user, group));
 });
 
+overviewRouter.post("/groups/:groupId/payments/upi-intent", (req, res) => {
+  const group = groups.find((item) => item.id === req.params.groupId);
+  if (!group) {
+    res.status(404).json({ error: "Group not found" });
+    return;
+  }
+
+  const parsed = settlementPaymentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const settlement = validateOutstandingSettlement(group, parsed.data);
+  if ("error" in settlement) {
+    res.status(400).json({ error: settlement.error });
+    return;
+  }
+
+  const fromUser = users.find((user) => user.id === parsed.data.from);
+  const toUser = users.find((user) => user.id === parsed.data.to);
+  const payment = {
+    id: `p${payments.length + 1}`,
+    groupId: group.id,
+    ...parsed.data,
+    method: "upi",
+    status: "pending",
+    createdAt: new Date().toISOString()
+  };
+  const upiIntent = createUpiIntentLink({
+    fromUser,
+    toUser,
+    amount: parsed.data.amount,
+    note: `${group.name} settlement`
+  });
+
+  payments.unshift(payment);
+  res.status(201).json({ payment: hydratePayment(payment), upiIntent });
+});
+
+overviewRouter.post("/groups/:groupId/payments/manual", (req, res) => {
+  const group = groups.find((item) => item.id === req.params.groupId);
+  if (!group) {
+    res.status(404).json({ error: "Group not found" });
+    return;
+  }
+
+  const parsed = settlementPaymentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const settlement = validateOutstandingSettlement(group, parsed.data);
+  if ("error" in settlement) {
+    res.status(400).json({ error: settlement.error });
+    return;
+  }
+
+  const payment = {
+    id: `p${payments.length + 1}`,
+    groupId: group.id,
+    ...parsed.data,
+    method: "manual",
+    status: "completed",
+    createdAt: new Date().toISOString()
+  };
+
+  payments.unshift(payment);
+  res.status(201).json(buildGroupDashboard(req.user, group));
+});
+
 function buildGroupDashboard(currentUser, group) {
   const activeGroup = hydrateGroup(group);
   const groupExpenses = expenses.filter((expense) => expense.groupId === activeGroup.id);
-  const balances = calculateNetBalances(groupExpenses, activeGroup.members);
+  const groupPayments = payments.filter((payment) => payment.groupId === activeGroup.id);
+  const rawBalances = calculateNetBalances(groupExpenses, activeGroup.members);
+  const balances = applySettlementPayments(rawBalances, groupPayments);
   const groupExpenseIds = new Set(groupExpenses.map((expense) => expense.id));
 
   return {
@@ -257,9 +338,28 @@ function buildGroupDashboard(currentUser, group) {
     expenses: groupExpenses.map(hydrateExpense),
     balances: balances.map(withUser),
     settlements: simplifySettlements(balances).map(withSettlementUsers),
+    payments: groupPayments.map(hydratePayment),
     disputes: disputes.filter((dispute) => groupExpenseIds.has(dispute.expenseId)).map(hydrateDispute),
     analytics: buildAnalytics(groupExpenses)
   };
+}
+
+function validateOutstandingSettlement(group, payload) {
+  if (!group.memberIds.includes(payload.from) || !group.memberIds.includes(payload.to)) {
+    return { error: "Settlement users must be members of this group." };
+  }
+
+  const activeGroup = hydrateGroup(group);
+  const groupExpenses = expenses.filter((expense) => expense.groupId === group.id);
+  const groupPayments = payments.filter((payment) => payment.groupId === group.id);
+  const balances = applySettlementPayments(calculateNetBalances(groupExpenses, activeGroup.members), groupPayments);
+  const outstanding = simplifySettlements(balances);
+
+  if (!findOutstandingSettlement(outstanding, payload)) {
+    return { error: "Settlement is no longer outstanding for that amount." };
+  }
+
+  return payload;
 }
 
 function findOrCreateMember(payload) {
@@ -332,6 +432,14 @@ function withSettlementUsers(settlement) {
     ...settlement,
     fromUser: publicUser(users.find((user) => user.id === settlement.from)),
     toUser: publicUser(users.find((user) => user.id === settlement.to))
+  };
+}
+
+function hydratePayment(payment) {
+  return {
+    ...payment,
+    fromUser: publicUser(users.find((user) => user.id === payment.from)),
+    toUser: publicUser(users.find((user) => user.id === payment.to))
   };
 }
 

@@ -75,6 +75,20 @@ export async function createReceiptExpense(groupId, payload) {
   });
 }
 
+export async function createUpiIntent(groupId, payload) {
+  return request(`/groups/${groupId}/payments/upi-intent`, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function markSettlementPaid(groupId, payload) {
+  return request(`/groups/${groupId}/payments/manual`, {
+    method: "POST",
+    body: payload
+  });
+}
+
 async function request(path, options = {}) {
   const session = getStoredSession();
   const headers = {

@@ -11,10 +11,20 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { addGroupMember, createExpense, createGroup, createReceiptExpense, getDashboard, mockExtractReceipt } from "../services/api";
+import {
+  addGroupMember,
+  createExpense,
+  createGroup,
+  createReceiptExpense,
+  createUpiIntent,
+  getDashboard,
+  markSettlementPaid,
+  mockExtractReceipt
+} from "../services/api";
 import { ExpenseForm } from "./ExpenseForm";
 import { GroupManager } from "./GroupManager";
 import { ReceiptScanner } from "./ReceiptScanner";
+import { SettlementPanel, settlementKey } from "./SettlementPanel";
 import { StatCard } from "./StatCard";
 
 const currency = new Intl.NumberFormat("en-IN", {
@@ -27,6 +37,8 @@ export function Dashboard({ session, onLogout }) {
   const [data, setData] = useState(null);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [receipt, setReceipt] = useState(null);
+  const [upiIntent, setUpiIntent] = useState("");
+  const [activePaymentKey, setActivePaymentKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isGroupSaving, setIsGroupSaving] = useState(false);
   const [isReceiptSaving, setIsReceiptSaving] = useState(false);
@@ -108,6 +120,38 @@ export function Dashboard({ session, onLogout }) {
       setError(requestError.message);
     } finally {
       setIsReceiptSaving(false);
+    }
+  }
+
+  async function requestUpiIntent(settlement) {
+    try {
+      setError("");
+      const response = await createUpiIntent(data.activeGroup.id, {
+        from: settlement.from,
+        to: settlement.to,
+        amount: settlement.amount
+      });
+      setUpiIntent(response.upiIntent);
+      setActivePaymentKey(settlementKey(settlement));
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  async function completeSettlement(settlement) {
+    try {
+      setError("");
+      const nextData = await markSettlementPaid(data.activeGroup.id, {
+        from: settlement.from,
+        to: settlement.to,
+        amount: settlement.amount
+      });
+      setData(nextData);
+      setSelectedGroupId(nextData.activeGroup.id);
+      setUpiIntent("");
+      setActivePaymentKey("");
+    } catch (requestError) {
+      setError(requestError.message);
     }
   }
 
@@ -257,17 +301,14 @@ export function Dashboard({ session, onLogout }) {
                 <h2>Settlements</h2>
               </div>
             </div>
-            <div className="settlement-list">
-              {data.settlements.length ? data.settlements.map((settlement) => (
-                <article key={`${settlement.from}-${settlement.to}`}>
-                  <div>
-                    <strong>{settlement.fromUser.name}</strong>
-                    <span>pays {settlement.toUser.name}</span>
-                  </div>
-                  <strong>{currency.format(settlement.amount)}</strong>
-                </article>
-              )) : <p className="empty-state">No settlements needed yet.</p>}
-            </div>
+            <SettlementPanel
+              settlements={data.settlements}
+              payments={data.payments}
+              onCreateUpi={requestUpiIntent}
+              onMarkPaid={completeSettlement}
+              activePaymentKey={activePaymentKey}
+              upiIntent={upiIntent}
+            />
           </div>
 
           <div className="panel" id="scanner">

@@ -116,3 +116,5 @@ export const disputes = [
     createdAt: "2026-05-20"
   }
 ];
+
+export const payments = [];

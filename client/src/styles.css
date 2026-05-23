@@ -604,6 +604,53 @@ select {
   color: #0f766e;
 }
 
+.settlement-workflow {
+  display: grid;
+  gap: 14px;
+}
+
+.settlement-list article {
+  flex-wrap: wrap;
+}
+
+.settlement-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.upi-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  border-radius: 8px;
+  background: #e8f5f1;
+  color: #0f5f55;
+  padding: 9px 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.payment-history {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #edf1ef;
+  padding-top: 12px;
+}
+
+.payment-history p {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  color: #52615d;
+  font-size: 0.84rem;
+}
+
+.muted-line {
+  color: #7b8682 !important;
+}
+
 .receipt-preview {
   display: grid;
   gap: 10px;

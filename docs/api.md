@@ -16,6 +16,8 @@ The first implementation uses an in-memory data store so the app is runnable bef
 - `POST /api/groups/:groupId/expenses` creates an `equal`, `custom`, or `percentage` split expense.
 - `POST /api/receipts/mock-extract` returns a mock structured receipt extraction.
 - `POST /api/groups/:groupId/receipts/item-wise-expense` creates an item-wise expense from extracted receipt items.
+- `POST /api/groups/:groupId/payments/upi-intent` creates a pending UPI intent link for an outstanding settlement.
+- `POST /api/groups/:groupId/payments/manual` marks an outstanding settlement as completed.
 
 Protected routes expect:
 
@@ -62,6 +64,16 @@ Receipt item-wise save example:
       { "name": "Chicken Biryani", "price": 580, "assignedTo": ["u2", "u3"] }
     ]
   }
+}
+```
+
+Settlement payment example:
+
+```json
+{
+  "from": "u2",
+  "to": "u1",
+  "amount": 1750
 }
 ```
 
