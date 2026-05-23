@@ -20,6 +20,7 @@ import {
   createReceiptExpense,
   createDispute,
   createUpiIntent,
+  getAiInsights,
   getDashboard,
   markSettlementPaid,
   mockExtractReceipt,
@@ -43,6 +44,7 @@ export function Dashboard({ session, onLogout }) {
   const [data, setData] = useState(null);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [receipt, setReceipt] = useState(null);
+  const [aiInsights, setAiInsights] = useState(null);
   const [upiIntent, setUpiIntent] = useState("");
   const [activePaymentKey, setActivePaymentKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -191,6 +193,15 @@ export function Dashboard({ session, onLogout }) {
       const nextData = await resolveDispute(disputeId, { status, resolution });
       setData(nextData);
       setSelectedGroupId(nextData.activeGroup.id);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  async function refreshAiInsights() {
+    try {
+      setError("");
+      setAiInsights(await getAiInsights(data.activeGroup.id));
     } catch (requestError) {
       setError(requestError.message);
     }
@@ -429,13 +440,16 @@ export function Dashboard({ session, onLogout }) {
                 <p>AI insights</p>
                 <h2>Signals</h2>
               </div>
-              <Bell size={18} />
+              <button className="icon-button" onClick={refreshAiInsights} aria-label="Refresh AI insights">
+                <Bell size={18} />
+              </button>
             </div>
             <div className="insight-list">
-              {data.analytics.insights.map((insight) => (
+              {(aiInsights?.insights ?? data.analytics.insights).map((insight) => (
                 <p key={insight}>{insight}</p>
               ))}
             </div>
+            {aiInsights ? <p className="provider-line">Provider: {aiInsights.provider}</p> : null}
           </div>
 
           <div className="panel">

@@ -844,6 +844,13 @@ select {
   color: #4e4b42;
 }
 
+.provider-line {
+  margin: 10px 0 0;
+  color: #6b7a75;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .positive {
   color: #0f766e !important;
 }

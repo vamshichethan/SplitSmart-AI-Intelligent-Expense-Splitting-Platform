@@ -1,7 +1,12 @@
 import { Router } from "express";
+import multer from "multer";
 import { z } from "zod";
 import { disputeComments, disputes, expenses, groups, notifications, payments, users } from "../data.js";
 import { requireAuth } from "../middleware/auth.js";
+import { generateAiInsights } from "../services/aiInsights.js";
+import { uploadReceiptImage } from "../services/cloudinary.js";
+import { sendReminderEmail } from "../services/email.js";
+import { createRazorpayOrder } from "../services/razorpay.js";
 import { buildGroupAnalytics } from "../utils/analytics.js";
 import { applySettlementPayments, createUpiIntentLink, findOutstandingSettlement } from "../utils/payments.js";
 import { buildItemWiseExpense, ReceiptValidationError } from "../utils/receiptSplits.js";
@@ -11,6 +16,7 @@ import { buildExpenseSplits, SplitValidationError } from "../utils/splits.js";
 import { publicUser } from "../utils/users.js";
 
 export const overviewRouter = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const createExpenseSchema = z.object({
   title: z.string().min(2),
@@ -63,6 +69,11 @@ const settlementPaymentSchema = z.object({
   from: z.string(),
   to: z.string(),
   amount: z.number().positive()
+});
+
+const razorpayOrderSchema = z.object({
+  amount: z.number().positive(),
+  receipt: z.string().min(1).max(80).optional()
 });
 
 const createDisputeSchema = z.object({
@@ -223,6 +234,19 @@ overviewRouter.post("/receipts/mock-extract", (_req, res) => {
   });
 });
 
+overviewRouter.post("/receipts/upload", upload.single("receipt"), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: "Receipt file is required." });
+      return;
+    }
+
+    res.status(201).json(await uploadReceiptImage(req.file));
+  } catch (error) {
+    next(error);
+  }
+});
+
 overviewRouter.post("/groups/:groupId/receipts/item-wise-expense", (req, res) => {
   const group = groups.find((item) => item.id === req.params.groupId);
   if (!group) {
@@ -305,6 +329,25 @@ overviewRouter.post("/groups/:groupId/payments/upi-intent", (req, res) => {
   res.status(201).json({ payment: hydratePayment(payment), upiIntent });
 });
 
+overviewRouter.post("/payments/razorpay/order", async (req, res, next) => {
+  try {
+    const parsed = razorpayOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    res.status(201).json(
+      await createRazorpayOrder({
+        amount: parsed.data.amount,
+        receipt: parsed.data.receipt ?? `splitsmart_${Date.now()}`
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
 overviewRouter.post("/groups/:groupId/payments/manual", (req, res) => {
   const group = groups.find((item) => item.id === req.params.groupId);
   if (!group) {
@@ -337,22 +380,58 @@ overviewRouter.post("/groups/:groupId/payments/manual", (req, res) => {
   res.status(201).json(buildGroupDashboard(req.user, group));
 });
 
-overviewRouter.post("/expenses/:expenseId/reminders", (req, res) => {
+overviewRouter.post("/expenses/:expenseId/reminders", async (req, res, next) => {
   const expense = expenses.find((item) => item.id === req.params.expenseId);
   if (!expense) {
     res.status(404).json({ error: "Expense not found" });
     return;
   }
 
-  const group = groups.find((item) => item.id === expense.groupId);
-  const reminders = buildExpenseReminders({ group, expense, users }).map((reminder, index) => ({
-    id: `n${notifications.length + index + 1}`,
-    ...reminder,
-    createdAt: new Date().toISOString()
-  }));
+  try {
+    const group = groups.find((item) => item.id === expense.groupId);
+    const reminders = [];
 
-  notifications.unshift(...reminders);
-  res.status(201).json(buildGroupDashboard(req.user, group));
+    for (const reminder of buildExpenseReminders({ group, expense, users })) {
+      const user = users.find((item) => item.id === reminder.userId);
+      const emailResult = await sendReminderEmail({
+        to: user.email,
+        subject: `SplitSmart reminder: ${expense.title}`,
+        text: reminder.message
+      });
+      reminders.push({
+        id: `n${notifications.length + reminders.length + 1}`,
+        ...reminder,
+        status: emailResult.skipped ? "sent" : "email_sent",
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    notifications.unshift(...reminders);
+    res.status(201).json(buildGroupDashboard(req.user, group));
+  } catch (error) {
+    next(error);
+  }
+});
+
+overviewRouter.get("/groups/:groupId/analytics/ai-insights", async (req, res, next) => {
+  try {
+    const group = groups.find((item) => item.id === req.params.groupId);
+    if (!group) {
+      res.status(404).json({ error: "Group not found" });
+      return;
+    }
+
+    const dashboard = buildGroupDashboard(req.user, group);
+    res.json(
+      await generateAiInsights({
+        group: dashboard.activeGroup,
+        analytics: dashboard.analytics,
+        balances: dashboard.balances
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
 });
 
 overviewRouter.post("/expenses/:expenseId/disputes", (req, res) => {

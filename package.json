@@ -14,5 +14,10 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "cloudinary": "^2.10.0",
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.7"
   }
 }

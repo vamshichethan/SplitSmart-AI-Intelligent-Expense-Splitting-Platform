@@ -109,6 +109,10 @@ export async function resolveDispute(disputeId, payload) {
   });
 }
 
+export async function getAiInsights(groupId) {
+  return request(`/groups/${groupId}/analytics/ai-insights`);
+}
+
 async function request(path, options = {}) {
   const session = getStoredSession();
   const headers = {
