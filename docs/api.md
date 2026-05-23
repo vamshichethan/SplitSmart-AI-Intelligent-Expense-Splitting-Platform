@@ -12,7 +12,7 @@ The first implementation uses an in-memory data store so the app is runnable bef
 - `GET /api/dashboard?groupId=:groupId` returns the dashboard aggregate for a selected group.
 - `GET /api/groups/:groupId` returns group detail, expenses, balances, and settlements.
 - `POST /api/groups` creates a new group with the current user as a member.
-- `POST /api/groups/:groupId/members` adds an existing demo user or creates a lightweight member.
+- `POST /api/groups/:groupId/members` adds an existing user with `userId` or creates a custom member with `name` and optional `email`.
 - `POST /api/groups/:groupId/expenses` creates an `equal`, `custom`, or `percentage` split expense.
 - `POST /api/receipts/mock-extract` returns a mock structured receipt extraction.
 - `POST /api/receipts/upload` uploads a receipt image to Cloudinary when configured.

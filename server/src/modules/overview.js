@@ -13,7 +13,7 @@ import { buildItemWiseExpense, ReceiptValidationError } from "../utils/receiptSp
 import { buildExpenseReminders } from "../utils/reminders.js";
 import { calculateNetBalances, simplifySettlements } from "../utils/settlements.js";
 import { buildExpenseSplits, SplitValidationError } from "../utils/splits.js";
-import { publicUser } from "../utils/users.js";
+import { initialsFor, publicUser } from "../utils/users.js";
 
 export const overviewRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -41,11 +41,15 @@ const createGroupSchema = z.object({
   memberIds: z.array(z.string()).optional()
 });
 
-const addMemberSchema = z.object({
-  userId: z.string().optional(),
-  name: z.string().min(2).max(80).optional(),
-  email: z.string().email().optional()
-});
+const addMemberSchema = z
+  .object({
+    userId: z.string().optional(),
+    name: z.string().trim().min(2).max(80).optional(),
+    email: z.string().trim().email().optional()
+  })
+  .refine((payload) => payload.userId || payload.name || payload.email, {
+    message: "Provide an existing user or new member details."
+  });
 
 const saveReceiptExpenseSchema = z.object({
   paidBy: z.string(),
@@ -564,17 +568,16 @@ function findOrCreateMember(payload) {
     if (existing) return existing;
   }
 
-  const name = payload.name ?? payload.email?.split("@")[0] ?? "New member";
+  const name = payload.name ?? payload.email.split("@")[0];
+  const emailSlug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/(^\.)|(\.$)/g, "");
   const user = {
     id: `u${users.length + 1}`,
     name,
-    email: payload.email ?? `${name.toLowerCase().replaceAll(" ", ".")}@example.com`,
-    avatar: name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0].toUpperCase())
-      .join(""),
+    email: payload.email?.toLowerCase() ?? `${emailSlug || `member${users.length + 1}`}@example.com`,
+    avatar: initialsFor(name),
     passwordHash: users[0].passwordHash
   };
 

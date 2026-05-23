@@ -532,6 +532,46 @@ select {
   grid-template-columns: minmax(0, 1fr) 42px;
 }
 
+.member-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 42px;
+  gap: 10px;
+  align-items: end;
+}
+
+.member-mode {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid #d5ded9;
+  border-radius: 8px;
+  background: #f9fbfa;
+}
+
+.member-mode button {
+  min-height: 38px;
+  border: 0;
+  background: transparent;
+  color: #5d6f68;
+  padding: 0 12px;
+  font-weight: 900;
+}
+
+.member-mode button.active {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.member-mode button:disabled {
+  opacity: 0.45;
+}
+
+.member-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
 .expense-list {
   margin-top: 18px;
 }
@@ -923,6 +963,8 @@ select {
   .form-grid,
   .compact-form,
   .compact-form:last-child,
+  .member-form,
+  .member-fields,
   .analytics-grid {
     grid-template-columns: 1fr;
   }
