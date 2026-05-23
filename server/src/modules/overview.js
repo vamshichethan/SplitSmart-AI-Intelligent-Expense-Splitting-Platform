@@ -3,6 +3,7 @@ import { z } from "zod";
 import { disputes, expenses, groups, users } from "../data.js";
 import { requireAuth } from "../middleware/auth.js";
 import { calculateNetBalances, simplifySettlements } from "../utils/settlements.js";
+import { buildExpenseSplits, SplitValidationError } from "../utils/splits.js";
 import { publicUser } from "../utils/users.js";
 
 export const overviewRouter = Router();
@@ -12,8 +13,16 @@ const createExpenseSchema = z.object({
   amount: z.number().positive(),
   category: z.string().min(2),
   paidBy: z.string(),
-  splitMode: z.enum(["equal", "custom"]).default("equal"),
-  splits: z.array(z.object({ userId: z.string(), amount: z.number().nonnegative() })).optional()
+  splitMode: z.enum(["equal", "custom", "percentage"]).default("equal"),
+  splits: z
+    .array(
+      z.object({
+        userId: z.string(),
+        amount: z.number().nonnegative().optional(),
+        percentage: z.number().nonnegative().optional()
+      })
+    )
+    .optional()
 });
 
 const createGroupSchema = z.object({
@@ -115,13 +124,29 @@ overviewRouter.post("/groups/:groupId/expenses", (req, res) => {
 
   const payload = parsed.data;
   const members = group.memberIds;
-  const splits =
-    payload.splitMode === "custom" && payload.splits?.length
-      ? payload.splits
-      : members.map((userId) => ({
-          userId,
-          amount: Math.round((payload.amount / members.length) * 100) / 100
-        }));
+
+  if (!members.includes(payload.paidBy)) {
+    res.status(400).json({ error: "Payer must be a member of this group." });
+    return;
+  }
+
+  let splits;
+
+  try {
+    splits = buildExpenseSplits({
+      amount: payload.amount,
+      members,
+      splitMode: payload.splitMode,
+      splits: payload.splits
+    });
+  } catch (error) {
+    if (error instanceof SplitValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+
+    throw error;
+  }
 
   const expense = {
     id: `e${expenses.length + 1}`,
@@ -130,6 +155,7 @@ overviewRouter.post("/groups/:groupId/expenses", (req, res) => {
     amount: payload.amount,
     category: payload.category,
     paidBy: payload.paidBy,
+    splitMode: payload.splitMode,
     date: new Date().toISOString().slice(0, 10),
     status: "settlement_due",
     splits,

@@ -227,7 +227,7 @@ export function Dashboard({ session, onLogout }) {
                   </div>
                   <div className="expense-amount">
                     <strong>{currency.format(expense.amount)}</strong>
-                    <span>{expense.status.replace("_", " ")}</span>
+                    <span>{expense.splitMode ?? "equal"} split · {expense.status.replace("_", " ")}</span>
                   </div>
                 </article>
               )) : <p className="empty-state">No expenses in this group yet.</p>}

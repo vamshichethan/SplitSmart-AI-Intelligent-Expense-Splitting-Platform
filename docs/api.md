@@ -13,7 +13,7 @@ The first implementation uses an in-memory data store so the app is runnable bef
 - `GET /api/groups/:groupId` returns group detail, expenses, balances, and settlements.
 - `POST /api/groups` creates a new group with the current user as a member.
 - `POST /api/groups/:groupId/members` adds an existing demo user or creates a lightweight member.
-- `POST /api/groups/:groupId/expenses` creates an equal or custom split expense.
+- `POST /api/groups/:groupId/expenses` creates an `equal`, `custom`, or `percentage` split expense.
 - `POST /api/receipts/mock-extract` returns a mock structured receipt extraction.
 
 Protected routes expect:
@@ -27,6 +27,23 @@ Demo login:
 ```text
 email: vamshi@example.com
 password: password123
+```
+
+Expense split examples:
+
+```json
+{
+  "title": "Dinner",
+  "amount": 3000,
+  "category": "Food",
+  "paidBy": "u1",
+  "splitMode": "percentage",
+  "splits": [
+    { "userId": "u1", "percentage": 50 },
+    { "userId": "u2", "percentage": 25 },
+    { "userId": "u3", "percentage": 25 }
+  ]
+}
 ```
 
 ## Next Backend Milestones
