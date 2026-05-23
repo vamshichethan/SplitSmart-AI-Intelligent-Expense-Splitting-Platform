@@ -3,6 +3,7 @@ import express from "express";
 import morgan from "morgan";
 import { authRouter } from "./modules/auth.js";
 import { overviewRouter } from "./modules/overview.js";
+import { persistenceMiddleware } from "./services/persistence.js";
 
 export function createApp() {
   const app = express();
@@ -24,6 +25,7 @@ export function createApp() {
   );
   app.use(express.json());
   app.use(morgan("dev"));
+  app.use(persistenceMiddleware);
 
   app.use("/api/auth", authRouter);
   app.use("/api", overviewRouter);
