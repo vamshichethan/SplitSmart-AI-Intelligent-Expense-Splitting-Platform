@@ -1,568 +1,407 @@
-# SplitSmart AI
+<div align="center">
 
-**AI-powered expense splitting platform with receipt scanning, UPI-ready settlements, reminders, analytics, and dispute handling.**
+# 💸 SplitSmart AI
 
-SplitSmart AI is designed as a placement-level full-stack project: not just a Splitwise clone, but a real-world expense collaboration platform. Users can create groups, add expenses, scan bills, split items person-by-person, simplify balances, settle payments, raise disputes, and understand spending patterns through analytics and AI insights.
+### AI-Powered Intelligent Expense Splitting Platform
+
+**Splitwise + AI Bill Scanner + UPI Settlements + Analytics + Dispute Handling**
+
+![React](https://img.shields.io/badge/Frontend-React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Node.js](https://img.shields.io/badge/Backend-Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/API-Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/UI-Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![AI OCR](https://img.shields.io/badge/AI-OCR_Receipt_Scanner-FF6F00?style=for-the-badge&logo=google&logoColor=white)
+![Razorpay](https://img.shields.io/badge/Payments-Razorpay_Test_Mode-02042B?style=for-the-badge&logo=razorpay&logoColor=white)
+
+![Status](https://img.shields.io/badge/Status-Planning_&_Architecture-blueviolet?style=flat-square)
+![Difficulty](https://img.shields.io/badge/Difficulty-Medium--Hard-red?style=flat-square)
+![Resume Project](https://img.shields.io/badge/Resume_Project-Placement_Level-success?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
+
+**A production-style full-stack project built to demonstrate real SDE skills: authentication, database design, AI/OCR, payments, graph algorithms, analytics, notifications, and dispute workflows.**
+
+[Core Idea](#-core-idea) •
+[Features](#-features) •
+[Tech Stack](#-tech-stack) •
+[Architecture](#-system-architecture) •
+[Database](#-database-design) •
+[Build Phases](#-build-phases) •
+[Resume Impact](#-resume-impact)
+
+</div>
 
 ---
 
-## Project Vision
+## 🎯 Core Idea
 
-Managing shared expenses is simple until bills become itemized, people pay unequally, payments are delayed, or someone disagrees with a charge. SplitSmart AI solves this by combining:
+> **Most expense apps split totals. SplitSmart AI understands the bill, assigns items, simplifies debt, reminds users, tracks disputes, and explains spending behavior.**
 
-- Group-based expense tracking
-- AI receipt and bill scanning
-- Item-wise bill allocation
-- Smart split logic
-- Graph-based settlement simplification
-- UPI and Razorpay test payment flows
-- Email and optional WhatsApp/SMS reminders
-- Dispute resolution workflows
-- Analytics dashboards
-- AI-powered spending insights
+SplitSmart AI helps groups manage shared expenses from start to settlement:
 
-The goal is to build a polished, production-style expense management system that demonstrates full-stack engineering, database modeling, authentication, payments, AI/OCR integration, algorithms, and product thinking.
+- 🧾 Upload a restaurant bill or receipt
+- 🤖 Extract items, prices, tax, service charge, and total using AI/OCR
+- 👥 Assign items to people
+- 🧮 Split by equal, custom, percentage, or item-wise logic
+- 🔁 Manage recurring expenses and shared subscriptions
+- 📉 Simplify balances using graph algorithms
+- 💳 Settle through Razorpay test mode, UPI intent, or manual confirmation
+- 🔔 Send payment reminders with overdue tracking
+- ⚖️ Raise and resolve disputes
+- 📊 View spending analytics and AI insights
 
 ---
 
-## Core Features
+## ✨ Features
 
-### 1. Group Expense Management
+### 1. 👥 Group Expense Management
 
-- Create expense groups for trips, roommates, subscriptions, events, teams, or families
-- Add and manage friends or members
-- Assign group roles: admin and member
-- Add expenses with payer, amount, category, date, notes, and attachments
-- Track who paid, who owes, and group-level balances
+| Feature | Description |
+| --- | --- |
+| 🏘️ Groups | Create groups for trips, roommates, events, teams, or subscriptions |
+| 👤 Members | Add friends and manage group members |
+| 🛡️ Roles | Group admin and member permissions |
+| 💰 Expenses | Add payer, amount, category, date, notes, and receipt |
+| 📌 Balances | Track who paid, who owes, and group-level dues |
 
-### 2. AI Bill Scanner
+### 2. ⭐ AI Bill Scanner
 
-Users upload a restaurant bill or receipt image. The AI/OCR service extracts structured bill data:
+Users upload a bill image. The AI scanner extracts structured data from the receipt.
 
-- Items
-- Item prices
-- Taxes
-- Service charges
-- Discounts
-- Tips
-- Final total
-
-After extraction, users can assign each item to one or more members.
+| Extracted Field | Example |
+| --- | --- |
+| 🍕 Items | Pizza, Coke, Veg Meals |
+| 💵 Prices | ₹450, ₹80, ₹220 |
+| 🧾 Tax | GST, VAT, restaurant tax |
+| 🍽️ Service Charge | 5% or fixed service fee |
+| 🎯 Total | Final payable amount |
 
 Example item allocation:
 
-| Item | Assigned To | Split Style |
+| Bill Item | Assigned To | Split Style |
 | --- | --- | --- |
-| Pizza | Vamshi, Rahul | Shared equally |
-| Coke | Rahul | Single person |
-| Veg Meals | Priya | Single person |
-| Service Charge | Everyone | Proportional |
+| 🍕 Pizza | Vamshi, Rahul | Shared equally |
+| 🥤 Coke | Rahul | Rahul only |
+| 🍱 Veg Meals | Priya | Priya only |
+| 🧾 Service Charge | Everyone | Proportional |
 
-### 3. Smart Split Logic
+### 3. 🧠 Smart Split Logic
 
-Supported split modes:
+| Split Mode | Use Case |
+| --- | --- |
+| ⚖️ Equal Split | Everyone pays the same amount |
+| 🎛️ Custom Split | Manually enter exact amounts |
+| 📊 Percentage Split | Split by percentage contribution |
+| 🧾 Item-wise Split | Assign receipt items to people |
+| 🔁 Recurring Split | Rent, subscriptions, monthly bills |
+| 📦 Shared Subscription | Netflix, Spotify, cloud tools, etc. |
 
-- Equal split
-- Unequal/custom split
-- Percentage split
-- Item-wise split
-- Recurring expenses
-- Shared subscriptions
-- Tax and service charge distribution
-- Split validation to prevent incorrect totals
+### 4. 📉 Balance Simplification
 
-### 4. Balance Simplification
-
-Instead of showing many unnecessary repayments, SplitSmart AI simplifies balances into the minimum practical settlements.
-
-Example:
+Instead of showing messy repayment chains, SplitSmart AI calculates minimum practical settlements.
 
 ```text
-A owes B INR 500
-B owes C INR 300
-C owes A INR 200
+Before simplification:
+A owes B ₹500
+B owes C ₹300
+C owes A ₹200
+
+After simplification:
+A owes B ₹300
+B owes C ₹300
 ```
 
-Can be simplified into fewer final payments using a graph/net-balance algorithm.
+This is powered by a **net-balance graph algorithm**:
 
-This is one of the strongest algorithmic parts of the project because it applies DSA to a real product problem.
+```mermaid
+flowchart LR
+    A[Vamshi<br/>-500] -->|₹500| B[Rahul<br/>+200]
+    B -->|₹300| C[Priya<br/>+300]
+    C -->|₹200| A
 
-### 5. Payment Reminders
+    S[Settlement Engine] --> N[Compute Net Balances]
+    N --> D[Match Debtors and Creditors]
+    D --> M[Minimum Transactions]
+```
 
-- Due dates for expenses and settlements
-- Email reminders
-- Optional WhatsApp/SMS reminders
-- Reminder frequency: once, daily, weekly, custom
-- Overdue status tracking
-- Notification history
+### 5. 🔔 Payment Reminders
 
-### 6. UPI and Payment Integration
+- 📅 Due dates
+- 📧 Email reminders
+- 📱 Optional WhatsApp/SMS reminders
+- ⏰ Reminder frequency: once, daily, weekly, custom
+- 🚨 Overdue status
+- 🗂️ Notification history
 
-Settlement options:
+### 6. 💳 UPI and Payment Integration
 
-- Razorpay test mode checkout
-- UPI intent/deep link support
-- Manual "mark as paid"
-- Payment status tracking
-- Settlement history
-- Receipt generation
+| Payment Flow | Status |
+| --- | --- |
+| 🧪 Razorpay test mode | Planned |
+| 🇮🇳 UPI intent links | Planned |
+| ✅ Mark as paid | Planned |
+| 📜 Payment history | Planned |
+| 🧾 Settlement receipt | Planned |
 
-### 7. Dispute System
+### 7. ⚖️ Dispute System
 
-Members can raise a dispute when they disagree with an expense.
+When someone disagrees with an expense, they can raise a dispute.
 
-Dispute workflow:
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> UnderReview: Admin reviews
+    UnderReview --> Resolved: Accepted / adjusted
+    UnderReview --> Rejected: Invalid dispute
+    Resolved --> [*]
+    Rejected --> [*]
+```
 
-- Raise dispute on an expense or split
-- Add reason and optional evidence
-- Comment thread between group members
-- Admin reviews the dispute
-- Admin resolves, rejects, or adjusts the expense
-- Status tracking: pending, under_review, resolved, rejected
+Dispute features:
 
-### 8. Analytics Dashboard
+- 📝 Raise dispute with reason
+- 💬 Comment thread
+- 📎 Optional evidence
+- 🛡️ Admin resolution
+- ✅ Status: pending, under review, resolved, rejected
 
-Dashboard metrics:
+### 8. 📊 Analytics Dashboard
 
-- Monthly spending
-- Group-wise spending
-- Category-wise spending
-- Top spender
-- Pending dues
-- Settlement trends
-- Most active groups
-- Delayed settlements
-- Personal vs shared expenses
+| Dashboard Metric | What It Shows |
+| --- | --- |
+| 📆 Monthly spending | Spending over time |
+| 🏘️ Group-wise spending | Which groups cost the most |
+| 🏷️ Category spending | Food, travel, rent, subscriptions |
+| 🥇 Top spender | Highest spender in a group |
+| ⏳ Pending dues | Unpaid balances |
+| 📈 Settlement trends | How quickly people settle |
 
-Recommended charting library: **Recharts**.
+### 9. 🤖 AI Spending Insights
 
-### 9. AI Spending Insights
+AI-generated insights can explain behavior in natural language:
 
-AI-generated insights can summarize user and group spending patterns:
+> "You spent 42% more on food this month."
 
-- "You spent 42% more on food this month."
-- "Your group's highest shared expense category is travel."
-- "Rahul usually delays settlements by more than 5 days."
-- "Your subscription expenses increased this month."
-- "Food and transport make up most of your shared expenses."
+> "Your group's highest shared expense category is travel."
 
-### 10. Authentication and Roles
+> "Rahul usually delays settlements by more than 5 days."
+
+> "Subscriptions increased compared to last month."
+
+### 10. 🔐 Authentication and Roles
 
 - JWT authentication
-- Password hashing
+- Password hashing with bcrypt
 - Refresh token support
+- Protected API routes
 - Google login optional
-- User profile management
-- Group roles:
-  - Group admin
-  - Group member
+- Group admin/member access control
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 ### Frontend
 
-- React
-- Tailwind CSS
-- React Router
-- Axios or TanStack Query
-- Recharts
-- Form validation with React Hook Form + Zod
+| Technology | Purpose |
+| --- | --- |
+| ⚛️ React | Frontend UI |
+| 🎨 Tailwind CSS | Styling |
+| 🧭 React Router | Routing |
+| 🔄 Axios / TanStack Query | API communication |
+| 📊 Recharts | Analytics charts |
+| ✅ React Hook Form + Zod | Forms and validation |
 
 ### Backend
 
-- Node.js
-- Express.js
-- JWT authentication
-- Bcrypt password hashing
-- Zod/Joi request validation
-- Multer for receipt uploads
-- Nodemailer for email reminders
+| Technology | Purpose |
+| --- | --- |
+| 🟢 Node.js | Runtime |
+| 🚂 Express.js | REST API |
+| 🔐 JWT | Authentication |
+| 🔒 Bcrypt | Password hashing |
+| 📦 Multer | Receipt uploads |
+| 📧 Nodemailer | Email reminders |
+| 🧪 Zod / Joi | Request validation |
 
-### Database
+### Database and Services
 
-- PostgreSQL
-- Prisma ORM or node-postgres
-- Relational schema for users, groups, expenses, payments, and disputes
-
-PostgreSQL is preferred because money transactions, settlements, and dispute records need structured relational data and strong consistency.
-
-### AI and OCR
-
-Options:
-
-- Gemini API or OpenAI API for structured extraction and spending insights
-- Google Vision API for OCR
-- Tesseract.js for local OCR fallback
-
-Recommended approach:
-
-1. OCR extracts raw text from the receipt image
-2. AI model converts raw text into structured JSON
-3. Backend validates extracted totals before saving
-4. User confirms or edits the scanned bill before creating the expense
-
-### Payments
-
-- Razorpay test mode
-- UPI intent links
-- Manual settlement fallback
-
-### Deployment
-
-Suggested deployment plan:
-
-- Frontend: Vercel or Netlify
-- Backend: Render, Railway, or Fly.io
-- Database: Supabase PostgreSQL, Neon, Railway PostgreSQL, or Render PostgreSQL
-- File uploads: Cloudinary, S3, or local storage for development
+| Technology | Purpose |
+| --- | --- |
+| 🐘 PostgreSQL | Relational database |
+| 🔷 Prisma ORM | Schema and migrations |
+| 🤖 Gemini API / OpenAI API | AI extraction and insights |
+| 👁️ Google Vision / Tesseract.js | OCR |
+| 💳 Razorpay | Test payment flow |
+| ☁️ Cloudinary / S3 | Receipt storage |
 
 ---
 
-## System Architecture
+## 🏗️ System Architecture
 
-```text
-React Frontend
-  |
-  | REST API / JSON
-  v
-Node.js + Express API
-  |
-  | SQL queries / ORM
-  v
-PostgreSQL Database
-  |
-  +--> AI/OCR Service
-  |      |
-  |      +--> Receipt image OCR
-  |      +--> Structured bill extraction
-  |      +--> Spending insights
-  |
-  +--> Payment Service
-  |      |
-  |      +--> Razorpay test checkout
-  |      +--> UPI intent
-  |
-  +--> Notification Service
-         |
-         +--> Email reminders
-         +--> Optional SMS/WhatsApp reminders
+```mermaid
+flowchart TD
+    U[👤 User] --> FE[⚛️ React Frontend]
+    FE --> API[🚂 Node.js + Express API]
+
+    API --> AUTH[🔐 Auth Service]
+    API --> EXP[💰 Expense Service]
+    API --> OCR[🧾 AI/OCR Service]
+    API --> PAY[💳 Payment Service]
+    API --> NOTIF[🔔 Notification Service]
+    API --> ANALYTICS[📊 Analytics Service]
+    API --> DISPUTE[⚖️ Dispute Service]
+
+    AUTH --> DB[(🐘 PostgreSQL)]
+    EXP --> DB
+    OCR --> DB
+    PAY --> DB
+    NOTIF --> DB
+    ANALYTICS --> DB
+    DISPUTE --> DB
+
+    OCR --> AI[🤖 Gemini / OpenAI]
+    OCR --> VISION[👁️ OCR Engine]
+    PAY --> RZP[💳 Razorpay Test Mode]
+    PAY --> UPI[🇮🇳 UPI Intent]
+    NOTIF --> EMAIL[📧 Email]
+    NOTIF --> SMS[📱 SMS / WhatsApp Optional]
 ```
 
 ---
 
-## Database Design
-
-Main tables:
+## 🧬 Database Design
 
 | Table | Purpose |
 | --- | --- |
-| users | Stores user accounts, auth data, and profile details |
-| groups | Expense groups created by users |
-| group_members | Maps users to groups with roles |
-| expenses | Stores expense records |
-| expense_splits | Stores who owes what for each expense |
-| receipt_items | Stores extracted bill items from scanned receipts |
-| payments | Stores payment attempts and completed payments |
-| settlements | Stores simplified settlement records |
-| disputes | Stores disputes raised against expenses or splits |
-| dispute_comments | Stores discussion inside a dispute |
-| notifications | Stores reminder and notification history |
-| receipts | Stores uploaded receipt metadata and OCR output |
-| recurring_expenses | Stores recurring bills and subscriptions |
-| audit_logs | Stores important financial or admin actions |
+| 👤 users | User accounts, auth data, profile details |
+| 🏘️ groups | Expense groups |
+| 👥 group_members | Users inside groups with roles |
+| 💰 expenses | Expense records |
+| 🧾 expense_splits | Who owes what for each expense |
+| 🍽️ receipt_items | Extracted bill items |
+| 💳 payments | Payment attempts and completed payments |
+| 🔁 settlements | Simplified settlement records |
+| ⚖️ disputes | Disputes on expenses or splits |
+| 💬 dispute_comments | Dispute discussion |
+| 🔔 notifications | Reminder logs |
+| 📸 receipts | Uploaded receipt metadata and OCR data |
+| 🔄 recurring_expenses | Recurring bills and subscriptions |
+| 🧾 audit_logs | Important financial/admin actions |
 
-### Suggested Entity Relationships
+### Entity Relationship Diagram
 
-```text
-users 1---N group_members N---1 groups
-groups 1---N expenses
-users 1---N expenses as payer
-expenses 1---N expense_splits
-expenses 1---N receipt_items
-expenses 1---N disputes
-disputes 1---N dispute_comments
-users 1---N payments
-groups 1---N settlements
-users 1---N notifications
+```mermaid
+erDiagram
+    users ||--o{ group_members : joins
+    groups ||--o{ group_members : contains
+    groups ||--o{ expenses : has
+    users ||--o{ expenses : pays
+    expenses ||--o{ expense_splits : splits
+    expenses ||--o{ receipt_items : includes
+    expenses ||--o{ disputes : challenged_by
+    disputes ||--o{ dispute_comments : has
+    groups ||--o{ settlements : simplifies
+    users ||--o{ payments : makes
+    users ||--o{ notifications : receives
 ```
 
 ---
 
-## Suggested API Modules
+## 🔌 API Modules
 
-### Auth
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-
-### Users
-
-- `GET /api/users/search`
-- `GET /api/users/:id`
-- `PATCH /api/users/me`
-
-### Groups
-
-- `POST /api/groups`
-- `GET /api/groups`
-- `GET /api/groups/:groupId`
-- `POST /api/groups/:groupId/members`
-- `PATCH /api/groups/:groupId/members/:memberId`
-- `DELETE /api/groups/:groupId/members/:memberId`
-
-### Expenses
-
-- `POST /api/groups/:groupId/expenses`
-- `GET /api/groups/:groupId/expenses`
-- `GET /api/expenses/:expenseId`
-- `PATCH /api/expenses/:expenseId`
-- `DELETE /api/expenses/:expenseId`
-
-### Receipt Scanner
-
-- `POST /api/receipts/upload`
-- `POST /api/receipts/:receiptId/extract`
-- `PATCH /api/receipts/:receiptId/items`
-- `POST /api/receipts/:receiptId/create-expense`
-
-### Settlements
-
-- `GET /api/groups/:groupId/balances`
-- `POST /api/groups/:groupId/simplify`
-- `POST /api/settlements`
-- `PATCH /api/settlements/:settlementId/mark-paid`
-
-### Payments
-
-- `POST /api/payments/razorpay/order`
-- `POST /api/payments/razorpay/verify`
-- `POST /api/payments/upi-intent`
-- `GET /api/payments/history`
-
-### Disputes
-
-- `POST /api/expenses/:expenseId/disputes`
-- `GET /api/groups/:groupId/disputes`
-- `POST /api/disputes/:disputeId/comments`
-- `PATCH /api/disputes/:disputeId/resolve`
-
-### Analytics
-
-- `GET /api/analytics/monthly`
-- `GET /api/analytics/groups`
-- `GET /api/analytics/categories`
-- `GET /api/analytics/settlements`
-- `GET /api/analytics/insights`
+| Module | Sample Routes |
+| --- | --- |
+| 🔐 Auth | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` |
+| 👤 Users | `GET /api/users/search`, `PATCH /api/users/me` |
+| 🏘️ Groups | `POST /api/groups`, `GET /api/groups/:groupId` |
+| 💰 Expenses | `POST /api/groups/:groupId/expenses`, `GET /api/expenses/:expenseId` |
+| 🧾 Receipts | `POST /api/receipts/upload`, `POST /api/receipts/:id/extract` |
+| 🔁 Settlements | `GET /api/groups/:id/balances`, `POST /api/groups/:id/simplify` |
+| 💳 Payments | `POST /api/payments/razorpay/order`, `POST /api/payments/upi-intent` |
+| ⚖️ Disputes | `POST /api/expenses/:id/disputes`, `PATCH /api/disputes/:id/resolve` |
+| 📊 Analytics | `GET /api/analytics/monthly`, `GET /api/analytics/insights` |
 
 ---
 
-## Build Phases
+## 🧭 Build Phases
 
-### Phase 1: Project Setup and Foundation
+| Phase | Focus | Deliverable |
+| --- | --- | --- |
+| ✅ Phase 1 | Project setup | React, Express, PostgreSQL, folder structure |
+| 🔐 Phase 2 | Authentication | JWT login/register, protected routes |
+| 👥 Phase 3 | Groups | Groups, members, roles |
+| 💰 Phase 4 | Expenses | Add expenses and split logic |
+| 📉 Phase 5 | DSA algorithm | Balance simplification |
+| 🧾 Phase 6 | AI scanner | Receipt OCR and item-wise split |
+| 💳 Phase 7 | Payments | Razorpay test mode and UPI intent |
+| 🔔 Phase 8 | Reminders | Email reminders and overdue tracking |
+| ⚖️ Phase 9 | Disputes | Raise, comment, resolve disputes |
+| 📊 Phase 10 | Analytics | Spending dashboard |
+| 🤖 Phase 11 | AI insights | Natural language spending insights |
+| 🚀 Phase 12 | Polish + deploy | Testing, seed data, deployment, demo |
 
-Goal: Create the full-stack foundation.
+### Roadmap Flow
 
-- Set up React frontend
-- Set up Express backend
-- Configure PostgreSQL
-- Add Prisma or SQL migration setup
-- Add environment variable management
-- Add base folder structure
-- Add global error handling
-- Add request validation pattern
-- Add basic UI shell and routing
-
-Deliverable:
-
-- Running frontend and backend
-- Connected database
-- Clean project structure
-
-### Phase 2: Authentication and User Management
-
-Goal: Secure the application.
-
-- User registration
-- User login
-- JWT access tokens
-- Refresh token flow
-- Password hashing
-- Auth middleware
-- Protected routes
-- User profile page
-
-Deliverable:
-
-- Users can securely sign up, log in, and access protected pages.
-
-### Phase 3: Groups and Members
-
-Goal: Build collaboration primitives.
-
-- Create groups
-- Add members
-- Search users
-- Assign group roles
-- Remove members
-- View group dashboard
-
-Deliverable:
-
-- Users can create groups and collaborate with members.
-
-### Phase 4: Expense Creation and Split Logic
-
-Goal: Implement core Splitwise-style expense handling.
-
-- Add expenses
-- Equal split
-- Unequal split
-- Percentage split
-- Category assignment
-- Expense history
-- Balance calculation
-- Edit and delete expenses
-
-Deliverable:
-
-- Users can add expenses and see who owes whom.
-
-### Phase 5: Balance Simplification Algorithm
-
-Goal: Add strong DSA value.
-
-- Compute net balance for each member
-- Separate debtors and creditors
-- Generate minimum practical settlement transactions
-- Store settlement suggestions
-- Mark settlements as paid
-
-Deliverable:
-
-- Groups can simplify balances into fewer settlements.
-
-### Phase 6: AI Receipt Scanner
-
-Goal: Add the standout AI feature.
-
-- Upload bill image
-- Extract raw text using OCR
-- Convert OCR output into structured JSON using AI
-- Detect items, prices, tax, service charge, and total
-- Validate extracted totals
-- Let users edit extracted bill data
-- Assign items to members
-- Create item-wise expense splits
-
-Deliverable:
-
-- Users can scan a receipt and create an item-wise split expense.
-
-### Phase 7: Payments and UPI Settlement
-
-Goal: Make settlements feel real.
-
-- Razorpay test order creation
-- Razorpay payment verification
-- UPI intent generation
-- Manual mark-as-paid flow
-- Payment history
-- Settlement receipt generation
-
-Deliverable:
-
-- Users can settle balances through payment flows or manual confirmation.
-
-### Phase 8: Reminders and Notifications
-
-Goal: Add real-world follow-up behavior.
-
-- Due dates
-- Email reminders
-- Reminder frequency
-- Overdue status
-- Notification logs
-- Optional WhatsApp/SMS integration
-
-Deliverable:
-
-- Users get reminders for pending and overdue settlements.
-
-### Phase 9: Dispute Management
-
-Goal: Add product depth and trust workflows.
-
-- Raise disputes
-- Add dispute reason
-- Comment thread
-- Attach evidence optionally
-- Admin resolution flow
-- Expense adjustment after dispute resolution
-
-Deliverable:
-
-- Users can challenge incorrect expenses and admins can resolve them.
-
-### Phase 10: Analytics Dashboard
-
-Goal: Turn expense records into insight.
-
-- Monthly spending chart
-- Group-wise spending chart
-- Category-wise spending chart
-- Pending dues cards
-- Top spender
-- Settlement trend chart
-- Filters by date, group, and category
-
-Deliverable:
-
-- Users can understand spending patterns visually.
-
-### Phase 11: AI Spending Insights
-
-Goal: Add intelligent summaries.
-
-- Generate user-level spending insights
-- Generate group-level spending insights
-- Detect unusual increases
-- Identify delayed settlements
-- Highlight top categories
-- Suggest budgeting actions
-
-Deliverable:
-
-- Users receive natural-language insights about spending behavior.
-
-### Phase 12: Polish, Testing, and Deployment
-
-Goal: Prepare the project for resume, demo, and interviews.
-
-- Add loading states
-- Add empty states
-- Add responsive layouts
-- Add unit tests for split logic
-- Add integration tests for APIs
-- Add seed data
-- Add API documentation
-- Add deployment configuration
-- Deploy frontend, backend, and database
-- Record demo video
-
-Deliverable:
-
-- Production-style demo-ready full-stack project.
+```mermaid
+timeline
+    title SplitSmart AI Build Roadmap
+    Phase 1 : Setup full-stack repo
+            : Configure PostgreSQL
+            : Add base architecture
+    Phase 2 : Auth and users
+            : JWT protected routes
+    Phase 3 : Groups and members
+            : Role-based access
+    Phase 4 : Expenses and splits
+            : Equal, custom, percentage
+    Phase 5 : Graph settlement engine
+            : Minimize transactions
+    Phase 6 : AI receipt scanner
+            : Item-wise allocation
+    Phase 7 : Payments and reminders
+            : Razorpay, UPI, email
+    Phase 8 : Disputes and analytics
+            : Dashboard and insights
+    Phase 9 : Testing and deployment
+            : Resume-ready demo
+```
 
 ---
 
-## Folder Structure
+## 🧮 Key Algorithm: Settlement Simplification
 
-Suggested monorepo structure:
+### Problem
+
+In group expenses, many people owe each other money. Showing every transaction makes settlement confusing.
+
+### Solution
+
+Use net balances and match debtors with creditors.
+
+```mermaid
+flowchart LR
+    E[All Expenses] --> B[Calculate Net Balance Per User]
+    B --> D[Debtors: Negative Balance]
+    B --> C[Creditors: Positive Balance]
+    D --> M[Greedy Matching]
+    C --> M
+    M --> S[Minimum Settlement Transactions]
+```
+
+### High-Level Steps
+
+1. Add paid amount to payer balance
+2. Subtract owed amount from participants
+3. Separate users into debtors and creditors
+4. Match smallest debtor/creditor amounts
+5. Generate final settlement transactions
+
+This makes the project stronger in interviews because it connects **graphs, greedy logic, and real financial workflows**.
+
+---
+
+## 📁 Suggested Folder Structure
 
 ```text
 splitsmart-ai/
@@ -606,95 +445,82 @@ splitsmart-ai/
 
 ---
 
-## Key Algorithms
+## 🔐 Security Considerations
 
-### Balance Calculation
-
-For every expense:
-
-1. Add amount paid to payer's balance
-2. Subtract owed amount from each participant's balance
-3. Net result:
-   - Positive balance means the user should receive money
-   - Negative balance means the user owes money
-
-### Settlement Simplification
-
-High-level approach:
-
-1. Build net balance for each user
-2. Put users with negative balance into debtor list
-3. Put users with positive balance into creditor list
-4. Match debtors and creditors greedily
-5. Generate settlement transactions until all balances become zero
-
-Time complexity is efficient enough for real group sizes and easy to explain in interviews.
+- 🔒 Hash passwords using bcrypt
+- 🔑 Store JWT secrets in environment variables
+- ✅ Validate all request bodies
+- 🛡️ Enforce role-based group access
+- 🚫 Prevent users from accessing unrelated groups
+- 💳 Verify Razorpay payment signatures
+- 🧾 Validate AI-extracted receipt totals before saving
+- 🕵️ Maintain audit logs for financial changes
+- 🙈 Do not store sensitive payment details directly
 
 ---
 
-## Security Considerations
+## 🚀 Deployment Plan
 
-- Hash passwords using bcrypt
-- Store JWT secrets securely
-- Validate all request bodies
-- Use role-based access for group actions
-- Prevent users from accessing groups they do not belong to
-- Verify payment signatures from Razorpay
-- Validate receipt extraction totals before creating expenses
-- Keep audit logs for financial changes
-- Avoid storing sensitive payment details directly
+| Layer | Recommended Platform |
+| --- | --- |
+| ⚛️ Frontend | Vercel / Netlify |
+| 🚂 Backend | Render / Railway / Fly.io |
+| 🐘 PostgreSQL | Supabase / Neon / Railway / Render |
+| 📸 File Storage | Cloudinary / S3 |
+| 🔐 Secrets | Platform environment variables |
 
 ---
 
-## Resume Description
+## 🏆 Resume Impact
 
-**SplitSmart AI - AI-Powered Expense Splitting Platform**
+### SplitSmart AI — AI-Powered Expense Splitting Platform
 
 Built a full-stack expense management platform with group-based bill splitting, AI-powered receipt scanning, item-wise expense allocation, payment reminders, settlement tracking, dispute management, and spending analytics. Implemented graph-based balance simplification to minimize transactions and integrated Razorpay test payments with secure JWT authentication.
 
----
+### Why This Is Placement-Level
 
-## Why This Project Is Placement-Level
-
-This project demonstrates:
-
-- Full-stack application development
-- Relational database design
-- Authentication and authorization
-- Payment integration
-- AI/OCR integration
-- Graph algorithm implementation
-- Dashboard analytics
-- Notification workflows
-- Dispute resolution product design
-- Clean API architecture
-- Real-world financial data modeling
-
-Difficulty level:
+| Skill Area | Demonstrated Through |
+| --- | --- |
+| 💻 Full-stack development | React frontend + Express backend |
+| 🗄️ Database design | PostgreSQL relational schema |
+| 🔐 Auth | JWT, bcrypt, protected routes |
+| 🤖 AI integration | OCR and AI spending insights |
+| 🧮 DSA | Graph-based settlement simplification |
+| 💳 Payments | Razorpay test mode and UPI intent |
+| 📊 Analytics | Recharts dashboard and trends |
+| 🔔 Product thinking | Reminders, disputes, receipts, overdue status |
+| 🧪 Engineering maturity | Validation, tests, audit logs, deployment plan |
 
 ```text
-Original Splitwise clone: Easy to Medium
-SplitSmart AI upgraded version: Medium-Hard
+Original Splitwise Clone: Easy → Medium
+SplitSmart AI: Medium-Hard, Resume-Ready, Interview-Friendly
 ```
 
 ---
 
-## Future Enhancements
+## 🌟 Future Enhancements
 
-- Google login
-- Mobile app with React Native
-- Push notifications
-- Multi-currency support
-- PDF receipt export
-- Budget planning
-- Fraud/anomaly detection
-- Bank statement import
-- Voice-based expense entry
-- Admin dashboard for platform monitoring
+- 🔑 Google login
+- 📱 React Native mobile app
+- 🔔 Push notifications
+- 🌍 Multi-currency support
+- 📄 PDF receipt export
+- 💼 Budget planning
+- 🕵️ Fraud/anomaly detection
+- 🏦 Bank statement import
+- 🎙️ Voice-based expense entry
+- 🧑‍💼 Admin monitoring dashboard
 
 ---
 
-## Status
+<div align="center">
 
-Planning and architecture phase. The README defines the complete product scope, architecture, tech stack, database plan, API modules, and phased implementation roadmap.
+## ⭐ Project Status
 
+**Planning and architecture phase completed.**
+
+The repository now contains a complete product vision, system architecture, database plan, API modules, implementation phases, and resume positioning for building SplitSmart AI into a placement-level full-stack project.
+
+### Made for strong SDE portfolio impact 🚀
+
+</div>
