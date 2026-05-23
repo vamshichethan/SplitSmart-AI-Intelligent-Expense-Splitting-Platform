@@ -632,6 +632,60 @@ select {
   text-align: right;
 }
 
+.receipt-item-list {
+  display: grid;
+  gap: 10px;
+}
+
+.receipt-item {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #fbfcfb;
+  padding: 12px;
+}
+
+.receipt-item-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.receipt-item-heading span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #17211f;
+  font-weight: 900;
+}
+
+.assignee-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assignee-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #dce5df;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #52615d;
+  padding: 7px 9px;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.assignee-pill input {
+  width: 14px;
+  min-height: 14px;
+  accent-color: #0f766e;
+}
+
 .analytics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

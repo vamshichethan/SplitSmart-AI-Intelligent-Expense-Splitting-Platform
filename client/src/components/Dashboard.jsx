@@ -11,9 +11,10 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { addGroupMember, createExpense, createGroup, getDashboard, mockExtractReceipt } from "../services/api";
+import { addGroupMember, createExpense, createGroup, createReceiptExpense, getDashboard, mockExtractReceipt } from "../services/api";
 import { ExpenseForm } from "./ExpenseForm";
 import { GroupManager } from "./GroupManager";
+import { ReceiptScanner } from "./ReceiptScanner";
 import { StatCard } from "./StatCard";
 
 const currency = new Intl.NumberFormat("en-IN", {
@@ -28,6 +29,7 @@ export function Dashboard({ session, onLogout }) {
   const [receipt, setReceipt] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isGroupSaving, setIsGroupSaving] = useState(false);
+  const [isReceiptSaving, setIsReceiptSaving] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState("");
 
@@ -92,6 +94,20 @@ export function Dashboard({ session, onLogout }) {
       setError(requestError.message);
     } finally {
       setIsExtracting(false);
+    }
+  }
+
+  async function saveReceiptExpense(payload) {
+    setIsReceiptSaving(true);
+    try {
+      const nextData = await createReceiptExpense(data.activeGroup.id, payload);
+      setData(nextData);
+      setSelectedGroupId(nextData.activeGroup.id);
+      setReceipt(null);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsReceiptSaving(false);
     }
   }
 
@@ -258,32 +274,20 @@ export function Dashboard({ session, onLogout }) {
             <div className="panel-heading">
               <div>
                 <p>Receipt scanner</p>
-                <h2>Mock AI extraction</h2>
+                <h2>Item-wise extraction</h2>
               </div>
               <button className="icon-button" onClick={extractReceipt} aria-label="Extract receipt">
                 <ScanLine size={18} />
               </button>
             </div>
-            {receipt ? (
-              <div className="receipt-preview">
-                <div>
-                  <strong>{receipt.merchant}</strong>
-                  <span>{Math.round(receipt.confidence * 100)}% confidence</span>
-                </div>
-                {receipt.items.map((item) => (
-                  <p key={item.name}>
-                    {item.name}
-                    <strong>{currency.format(item.price)}</strong>
-                  </p>
-                ))}
-                <footer>Total {currency.format(receipt.total)}</footer>
-              </div>
-            ) : (
-              <button className="secondary-button" onClick={extractReceipt} disabled={isExtracting}>
-                <ScanLine size={18} />
-                {isExtracting ? "Extracting..." : "Run extractor"}
-              </button>
-            )}
+            <ReceiptScanner
+              group={data.activeGroup}
+              receipt={receipt}
+              onExtract={extractReceipt}
+              onSave={saveReceiptExpense}
+              isExtracting={isExtracting}
+              isSaving={isReceiptSaving}
+            />
           </div>
 
           <div className="panel wide">

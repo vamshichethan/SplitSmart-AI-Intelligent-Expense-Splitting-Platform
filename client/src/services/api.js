@@ -68,6 +68,13 @@ export async function mockExtractReceipt() {
   });
 }
 
+export async function createReceiptExpense(groupId, payload) {
+  return request(`/groups/${groupId}/receipts/item-wise-expense`, {
+    method: "POST",
+    body: payload
+  });
+}
+
 async function request(path, options = {}) {
   const session = getStoredSession();
   const headers = {

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { disputes, expenses, groups, users } from "../data.js";
 import { requireAuth } from "../middleware/auth.js";
+import { buildItemWiseExpense, ReceiptValidationError } from "../utils/receiptSplits.js";
 import { calculateNetBalances, simplifySettlements } from "../utils/settlements.js";
 import { buildExpenseSplits, SplitValidationError } from "../utils/splits.js";
 import { publicUser } from "../utils/users.js";
@@ -35,6 +36,24 @@ const addMemberSchema = z.object({
   userId: z.string().optional(),
   name: z.string().min(2).max(80).optional(),
   email: z.string().email().optional()
+});
+
+const saveReceiptExpenseSchema = z.object({
+  paidBy: z.string(),
+  receipt: z.object({
+    merchant: z.string().optional(),
+    confidence: z.number().optional(),
+    tax: z.number().nonnegative().optional(),
+    serviceCharge: z.number().nonnegative().optional(),
+    total: z.number().positive().optional(),
+    items: z.array(
+      z.object({
+        name: z.string().min(1),
+        price: z.number().nonnegative(),
+        assignedTo: z.array(z.string()).optional()
+      })
+    )
+  })
 });
 
 overviewRouter.get("/health", (_req, res) => {
@@ -174,13 +193,54 @@ overviewRouter.post("/receipts/mock-extract", (_req, res) => {
     serviceCharge: 240,
     total: 3144,
     items: [
-      { name: "Veg Thali", price: 460 },
-      { name: "Chicken Biryani", price: 580 },
-      { name: "Lime Soda", price: 160 },
-      { name: "Chocolate Brownie", price: 280 },
-      { name: "GST + Service", price: 424 }
+      { name: "Veg Thali", price: 640 },
+      { name: "Chicken Biryani", price: 920 },
+      { name: "Lime Soda", price: 320 },
+      { name: "Chocolate Brownie", price: 840 }
     ]
   });
+});
+
+overviewRouter.post("/groups/:groupId/receipts/item-wise-expense", (req, res) => {
+  const group = groups.find((item) => item.id === req.params.groupId);
+  if (!group) {
+    res.status(404).json({ error: "Group not found" });
+    return;
+  }
+
+  const parsed = saveReceiptExpenseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  let expensePayload;
+
+  try {
+    expensePayload = buildItemWiseExpense({
+      group,
+      paidBy: parsed.data.paidBy,
+      receipt: parsed.data.receipt
+    });
+  } catch (error) {
+    if (error instanceof ReceiptValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+
+    throw error;
+  }
+
+  const expense = {
+    id: `e${expenses.length + 1}`,
+    groupId: group.id,
+    date: new Date().toISOString().slice(0, 10),
+    status: "settlement_due",
+    ...expensePayload
+  };
+
+  expenses.unshift(expense);
+  res.status(201).json(buildGroupDashboard(req.user, group));
 });
 
 function buildGroupDashboard(currentUser, group) {

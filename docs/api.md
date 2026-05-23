@@ -15,6 +15,7 @@ The first implementation uses an in-memory data store so the app is runnable bef
 - `POST /api/groups/:groupId/members` adds an existing demo user or creates a lightweight member.
 - `POST /api/groups/:groupId/expenses` creates an `equal`, `custom`, or `percentage` split expense.
 - `POST /api/receipts/mock-extract` returns a mock structured receipt extraction.
+- `POST /api/groups/:groupId/receipts/item-wise-expense` creates an item-wise expense from extracted receipt items.
 
 Protected routes expect:
 
@@ -43,6 +44,24 @@ Expense split examples:
     { "userId": "u2", "percentage": 25 },
     { "userId": "u3", "percentage": 25 }
   ]
+}
+```
+
+Receipt item-wise save example:
+
+```json
+{
+  "paidBy": "u1",
+  "receipt": {
+    "merchant": "Coastal Curry House",
+    "tax": 184,
+    "serviceCharge": 240,
+    "total": 3144,
+    "items": [
+      { "name": "Veg Thali", "price": 460, "assignedTo": ["u1"] },
+      { "name": "Chicken Biryani", "price": 580, "assignedTo": ["u2", "u3"] }
+    ]
+  }
 }
 ```
 
