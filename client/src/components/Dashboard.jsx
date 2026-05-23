@@ -404,6 +404,23 @@ export function Dashboard({ session, onLogout }) {
                 </PieChart>
               </ResponsiveContainer>
             </div>
+            <div className="analytics-metrics">
+              <article>
+                <span>Top payer</span>
+                <strong>{data.analytics.topSpender?.name ?? "None"}</strong>
+                <p>{currency.format(data.analytics.topSpender?.amount ?? 0)}</p>
+              </article>
+              <article>
+                <span>Completed settlements</span>
+                <strong>{data.analytics.totals.completedSettlements}</strong>
+                <p>{data.analytics.totals.pendingPaymentLinks} pending links</p>
+              </article>
+              <article>
+                <span>Tracked spend</span>
+                <strong>{currency.format(data.analytics.totals.totalSpend)}</strong>
+                <p>{data.analytics.totals.expenseCount} expenses</p>
+              </article>
+            </div>
           </div>
 
           <div className="panel">

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { disputeComments, disputes, expenses, groups, notifications, payments, users } from "../data.js";
 import { requireAuth } from "../middleware/auth.js";
+import { buildGroupAnalytics } from "../utils/analytics.js";
 import { applySettlementPayments, createUpiIntentLink, findOutstandingSettlement } from "../utils/payments.js";
 import { buildItemWiseExpense, ReceiptValidationError } from "../utils/receiptSplits.js";
 import { buildExpenseReminders } from "../utils/reminders.js";
@@ -447,7 +448,11 @@ function buildGroupDashboard(currentUser, group) {
     notifications: notifications
       .filter((notification) => notification.groupId === activeGroup.id)
       .map(hydrateNotification),
-    analytics: buildAnalytics(groupExpenses)
+    analytics: buildGroupAnalytics({
+      expenses: groupExpenses,
+      payments: groupPayments,
+      members: activeGroup.members
+    })
   };
 }
 
@@ -561,27 +566,5 @@ function hydrateNotification(notification) {
     ...notification,
     user: publicUser(users.find((user) => user.id === notification.userId)),
     expense: expenses.find((expense) => expense.id === notification.expenseId) ?? null
-  };
-}
-
-function buildAnalytics(sourceExpenses = expenses) {
-  const categories = new Map();
-  const monthly = new Map();
-
-  for (const expense of sourceExpenses) {
-    categories.set(expense.category, (categories.get(expense.category) ?? 0) + expense.amount);
-    monthly.set(expense.date.slice(0, 7), (monthly.get(expense.date.slice(0, 7)) ?? 0) + expense.amount);
-  }
-
-  const topCategory = [...categories.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "shared expenses";
-
-  return {
-    categorySpend: [...categories.entries()].map(([name, value]) => ({ name, value })),
-    monthlySpend: [...monthly.entries()].map(([month, total]) => ({ month, total })),
-    insights: [
-      `${topCategory} is currently the most active category in this group.`,
-      "The simplified settlement engine reduced group dues to the minimum repayment list.",
-      sourceExpenses.length ? "Recent expenses are ready for settlement review." : "Add the first expense to unlock group insights."
-    ]
   };
 }
