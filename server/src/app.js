@@ -6,10 +6,20 @@ import { overviewRouter } from "./modules/overview.js";
 
 export function createApp() {
   const app = express();
+  const allowedOrigins = (process.env.CLIENT_ORIGIN ?? "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim());
 
   app.use(
     cors({
-      origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173"
+      origin(origin, callback) {
+        if (!origin || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error("Origin is not allowed by CORS"));
+      }
     })
   );
   app.use(express.json());
