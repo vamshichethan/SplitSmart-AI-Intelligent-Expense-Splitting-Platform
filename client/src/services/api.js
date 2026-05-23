@@ -89,6 +89,26 @@ export async function markSettlementPaid(groupId, payload) {
   });
 }
 
+export async function sendExpenseReminders(expenseId) {
+  return request(`/expenses/${expenseId}/reminders`, {
+    method: "POST"
+  });
+}
+
+export async function createDispute(expenseId, payload) {
+  return request(`/expenses/${expenseId}/disputes`, {
+    method: "POST",
+    body: payload
+  });
+}
+
+export async function resolveDispute(disputeId, payload) {
+  return request(`/disputes/${disputeId}/resolve`, {
+    method: "PATCH",
+    body: payload
+  });
+}
+
 async function request(path, options = {}) {
   const session = getStoredSession();
   const headers = {

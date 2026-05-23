@@ -600,6 +600,17 @@ select {
   font-weight: 800;
 }
 
+.row-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.row-actions .icon-button {
+  width: 32px;
+  height: 32px;
+}
+
 .settlement-list article strong:last-child {
   color: #0f766e;
 }
@@ -649,6 +660,66 @@ select {
 
 .muted-line {
   color: #7b8682 !important;
+}
+
+.workflow-stack,
+.workflow-section {
+  display: grid;
+  gap: 12px;
+}
+
+.workflow-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #10201c;
+}
+
+.workflow-section p,
+.dispute-card {
+  margin: 0;
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #fbfcfb;
+  padding: 11px;
+}
+
+.workflow-section p {
+  display: grid;
+  gap: 4px;
+  color: #52615d;
+  font-size: 0.85rem;
+}
+
+.workflow-section small,
+.dispute-card span,
+.dispute-card small {
+  color: #6b7a75;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.dispute-card {
+  display: grid;
+  gap: 10px;
+}
+
+.dispute-card > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dispute-card p {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.dispute-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 8px;
 }
 
 .receipt-preview {

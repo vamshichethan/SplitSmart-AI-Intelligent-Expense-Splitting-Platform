@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { z } from "zod";
-import { disputes, expenses, groups, payments, users } from "../data.js";
+import { disputeComments, disputes, expenses, groups, notifications, payments, users } from "../data.js";
 import { requireAuth } from "../middleware/auth.js";
 import { applySettlementPayments, createUpiIntentLink, findOutstandingSettlement } from "../utils/payments.js";
 import { buildItemWiseExpense, ReceiptValidationError } from "../utils/receiptSplits.js";
+import { buildExpenseReminders } from "../utils/reminders.js";
 import { calculateNetBalances, simplifySettlements } from "../utils/settlements.js";
 import { buildExpenseSplits, SplitValidationError } from "../utils/splits.js";
 import { publicUser } from "../utils/users.js";
@@ -61,6 +62,19 @@ const settlementPaymentSchema = z.object({
   from: z.string(),
   to: z.string(),
   amount: z.number().positive()
+});
+
+const createDisputeSchema = z.object({
+  reason: z.string().min(5).max(500)
+});
+
+const resolveDisputeSchema = z.object({
+  status: z.enum(["resolved", "rejected"]),
+  resolution: z.string().min(3).max(500)
+});
+
+const disputeCommentSchema = z.object({
+  message: z.string().min(1).max(500)
 });
 
 overviewRouter.get("/health", (_req, res) => {
@@ -322,6 +336,96 @@ overviewRouter.post("/groups/:groupId/payments/manual", (req, res) => {
   res.status(201).json(buildGroupDashboard(req.user, group));
 });
 
+overviewRouter.post("/expenses/:expenseId/reminders", (req, res) => {
+  const expense = expenses.find((item) => item.id === req.params.expenseId);
+  if (!expense) {
+    res.status(404).json({ error: "Expense not found" });
+    return;
+  }
+
+  const group = groups.find((item) => item.id === expense.groupId);
+  const reminders = buildExpenseReminders({ group, expense, users }).map((reminder, index) => ({
+    id: `n${notifications.length + index + 1}`,
+    ...reminder,
+    createdAt: new Date().toISOString()
+  }));
+
+  notifications.unshift(...reminders);
+  res.status(201).json(buildGroupDashboard(req.user, group));
+});
+
+overviewRouter.post("/expenses/:expenseId/disputes", (req, res) => {
+  const expense = expenses.find((item) => item.id === req.params.expenseId);
+  if (!expense) {
+    res.status(404).json({ error: "Expense not found" });
+    return;
+  }
+
+  const parsed = createDisputeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const dispute = {
+    id: `d${disputes.length + 1}`,
+    expenseId: expense.id,
+    raisedBy: req.user.id,
+    reason: parsed.data.reason,
+    status: "pending",
+    createdAt: new Date().toISOString().slice(0, 10),
+    resolution: ""
+  };
+
+  disputes.unshift(dispute);
+  res.status(201).json(buildGroupDashboard(req.user, groups.find((item) => item.id === expense.groupId)));
+});
+
+overviewRouter.post("/disputes/:disputeId/comments", (req, res) => {
+  const dispute = disputes.find((item) => item.id === req.params.disputeId);
+  if (!dispute) {
+    res.status(404).json({ error: "Dispute not found" });
+    return;
+  }
+
+  const parsed = disputeCommentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  disputeComments.push({
+    id: `dc${disputeComments.length + 1}`,
+    disputeId: dispute.id,
+    userId: req.user.id,
+    message: parsed.data.message,
+    createdAt: new Date().toISOString()
+  });
+
+  const expense = expenses.find((item) => item.id === dispute.expenseId);
+  res.status(201).json(buildGroupDashboard(req.user, groups.find((item) => item.id === expense.groupId)));
+});
+
+overviewRouter.patch("/disputes/:disputeId/resolve", (req, res) => {
+  const dispute = disputes.find((item) => item.id === req.params.disputeId);
+  if (!dispute) {
+    res.status(404).json({ error: "Dispute not found" });
+    return;
+  }
+
+  const parsed = resolveDisputeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  dispute.status = parsed.data.status;
+  dispute.resolution = parsed.data.resolution;
+
+  const expense = expenses.find((item) => item.id === dispute.expenseId);
+  res.json(buildGroupDashboard(req.user, groups.find((item) => item.id === expense.groupId)));
+});
+
 function buildGroupDashboard(currentUser, group) {
   const activeGroup = hydrateGroup(group);
   const groupExpenses = expenses.filter((expense) => expense.groupId === activeGroup.id);
@@ -340,6 +444,9 @@ function buildGroupDashboard(currentUser, group) {
     settlements: simplifySettlements(balances).map(withSettlementUsers),
     payments: groupPayments.map(hydratePayment),
     disputes: disputes.filter((dispute) => groupExpenseIds.has(dispute.expenseId)).map(hydrateDispute),
+    notifications: notifications
+      .filter((notification) => notification.groupId === activeGroup.id)
+      .map(hydrateNotification),
     analytics: buildAnalytics(groupExpenses)
   };
 }
@@ -416,7 +523,13 @@ function hydrateDispute(dispute) {
   return {
     ...dispute,
     expense: expense ? hydrateExpense(expense) : null,
-    user: publicUser(users.find((user) => user.id === dispute.raisedBy))
+    user: publicUser(users.find((user) => user.id === dispute.raisedBy)),
+    comments: disputeComments
+      .filter((comment) => comment.disputeId === dispute.id)
+      .map((comment) => ({
+        ...comment,
+        user: publicUser(users.find((user) => user.id === comment.userId))
+      }))
   };
 }
 
@@ -440,6 +553,14 @@ function hydratePayment(payment) {
     ...payment,
     fromUser: publicUser(users.find((user) => user.id === payment.from)),
     toUser: publicUser(users.find((user) => user.id === payment.to))
+  };
+}
+
+function hydrateNotification(notification) {
+  return {
+    ...notification,
+    user: publicUser(users.find((user) => user.id === notification.userId)),
+    expense: expenses.find((expense) => expense.id === notification.expenseId) ?? null
   };
 }
 

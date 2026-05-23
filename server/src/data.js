@@ -113,8 +113,32 @@ export const disputes = [
     raisedBy: "u2",
     reason: "Mocktails were assigned to everyone, but Ananya skipped drinks.",
     status: "under_review",
-    createdAt: "2026-05-20"
+    createdAt: "2026-05-20",
+    resolution: ""
+  }
+];
+
+export const disputeComments = [
+  {
+    id: "dc1",
+    disputeId: "d1",
+    userId: "u2",
+    message: "Please move mocktails away from Ananya's share.",
+    createdAt: "2026-05-20T10:30:00.000Z"
   }
 ];
 
 export const payments = [];
+
+export const notifications = [
+  {
+    id: "n1",
+    groupId: "g1",
+    expenseId: "e1",
+    userId: "u2",
+    type: "payment_reminder",
+    message: "Rahul owes ₹1,200 for Beach Shack Dinner.",
+    status: "sent",
+    createdAt: "2026-05-21T09:00:00.000Z"
+  }
+];

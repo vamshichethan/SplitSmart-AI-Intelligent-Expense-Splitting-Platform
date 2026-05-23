@@ -4,7 +4,9 @@ import {
   Bell,
   CircleDollarSign,
   LogOut,
+  MessageSquareWarning,
   ReceiptText,
+  Send,
   ScanLine,
   TrendingUp,
   Users
@@ -16,16 +18,20 @@ import {
   createExpense,
   createGroup,
   createReceiptExpense,
+  createDispute,
   createUpiIntent,
   getDashboard,
   markSettlementPaid,
-  mockExtractReceipt
+  mockExtractReceipt,
+  resolveDispute,
+  sendExpenseReminders
 } from "../services/api";
 import { ExpenseForm } from "./ExpenseForm";
 import { GroupManager } from "./GroupManager";
 import { ReceiptScanner } from "./ReceiptScanner";
 import { SettlementPanel, settlementKey } from "./SettlementPanel";
 import { StatCard } from "./StatCard";
+import { WorkflowPanel } from "./WorkflowPanel";
 
 const currency = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -150,6 +156,41 @@ export function Dashboard({ session, onLogout }) {
       setSelectedGroupId(nextData.activeGroup.id);
       setUpiIntent("");
       setActivePaymentKey("");
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  async function remindExpense(expenseId) {
+    try {
+      setError("");
+      const nextData = await sendExpenseReminders(expenseId);
+      setData(nextData);
+      setSelectedGroupId(nextData.activeGroup.id);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  async function disputeExpense(expense) {
+    try {
+      setError("");
+      const nextData = await createDispute(expense.id, {
+        reason: `Review requested for ${expense.title}.`
+      });
+      setData(nextData);
+      setSelectedGroupId(nextData.activeGroup.id);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  async function finishDispute(disputeId, status, resolution) {
+    try {
+      setError("");
+      const nextData = await resolveDispute(disputeId, { status, resolution });
+      setData(nextData);
+      setSelectedGroupId(nextData.activeGroup.id);
     } catch (requestError) {
       setError(requestError.message);
     }
@@ -288,6 +329,14 @@ export function Dashboard({ session, onLogout }) {
                   <div className="expense-amount">
                     <strong>{currency.format(expense.amount)}</strong>
                     <span>{expense.splitMode ?? "equal"} split · {expense.status.replace("_", " ")}</span>
+                    <div className="row-actions">
+                      <button className="icon-button" onClick={() => remindExpense(expense.id)} aria-label={`Send reminders for ${expense.title}`}>
+                        <Send size={16} />
+                      </button>
+                      <button className="icon-button" onClick={() => disputeExpense(expense)} aria-label={`Raise dispute for ${expense.title}`}>
+                        <MessageSquareWarning size={16} />
+                      </button>
+                    </div>
                   </div>
                 </article>
               )) : <p className="empty-state">No expenses in this group yet.</p>}
@@ -370,6 +419,21 @@ export function Dashboard({ session, onLogout }) {
                 <p key={insight}>{insight}</p>
               ))}
             </div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-heading">
+              <div>
+                <p>Operations</p>
+                <h2>Reminders and disputes</h2>
+              </div>
+              <MessageSquareWarning size={18} />
+            </div>
+            <WorkflowPanel
+              notifications={data.notifications}
+              disputes={data.disputes}
+              onResolveDispute={finishDispute}
+            />
           </div>
 
           <div className="panel">

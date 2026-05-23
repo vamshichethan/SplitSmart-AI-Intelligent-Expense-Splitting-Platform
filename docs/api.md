@@ -18,6 +18,10 @@ The first implementation uses an in-memory data store so the app is runnable bef
 - `POST /api/groups/:groupId/receipts/item-wise-expense` creates an item-wise expense from extracted receipt items.
 - `POST /api/groups/:groupId/payments/upi-intent` creates a pending UPI intent link for an outstanding settlement.
 - `POST /api/groups/:groupId/payments/manual` marks an outstanding settlement as completed.
+- `POST /api/expenses/:expenseId/reminders` logs payment reminders for owing members.
+- `POST /api/expenses/:expenseId/disputes` raises a dispute for an expense.
+- `POST /api/disputes/:disputeId/comments` appends a dispute comment.
+- `PATCH /api/disputes/:disputeId/resolve` resolves or rejects a dispute.
 
 Protected routes expect:
 
