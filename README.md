@@ -642,6 +642,5 @@ The current build is a working full-stack deployment with authentication, group/
 
 The repository now contains a complete product vision, system architecture, database plan, API modules, implementation phases, and resume positioning for building SplitSmart AI into a placement-level full-stack project.
 
-### Made for strong SDE portfolio impact 🚀
 
 </div>
