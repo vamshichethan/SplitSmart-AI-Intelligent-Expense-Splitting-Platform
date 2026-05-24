@@ -231,6 +231,40 @@ button:disabled {
   gap: 12px;
 }
 
+.realtime-status {
+  display: flex;
+  min-width: 150px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #cfe1d8;
+  border-radius: 8px;
+  background: #f8fcfa;
+  color: #1f3932;
+  padding: 8px 10px;
+}
+
+.realtime-status svg {
+  flex: 0 0 auto;
+  color: #0f8f62;
+}
+
+.realtime-status.disconnected svg,
+.realtime-status.connecting svg {
+  color: #b45309;
+}
+
+.realtime-status strong,
+.realtime-status p {
+  display: block;
+  margin: 0;
+}
+
+.realtime-status p {
+  color: #65736c;
+  font-size: 0.76rem;
+  text-transform: capitalize;
+}
+
 .current-user {
   min-width: 180px;
   border: 1px solid #dce5df;

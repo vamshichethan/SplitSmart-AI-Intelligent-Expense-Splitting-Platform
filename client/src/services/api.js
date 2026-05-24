@@ -156,7 +156,10 @@ export async function getAiInsights(groupId) {
   return request(`/groups/${groupId}/analytics/ai-insights`);
 }
 
-export function subscribeToRealtime(groupId, onEvent) {
+export function subscribeToRealtime(groupId, handlers) {
+  const onEvent = typeof handlers === "function" ? handlers : handlers.onEvent;
+  const onStatus = typeof handlers === "function" ? null : handlers.onStatus;
+
   if (!socket) {
     socket = io(SOCKET_URL || undefined, {
       transports: ["websocket", "polling"]
@@ -170,15 +173,22 @@ export function subscribeToRealtime(groupId, onEvent) {
     }
   };
   const joinGroup = () => socket.emit("group:join", groupId);
+  const handleReady = () => onStatus?.("connected");
+  const handleDisconnect = () => onStatus?.("disconnected");
 
   if (groupId) {
     joinGroup();
     socket.on("connect", joinGroup);
   }
+  socket.on("realtime:ready", handleReady);
+  socket.on("disconnect", handleDisconnect);
+  onStatus?.(socket.connected ? "connected" : "connecting");
   events.forEach((eventName) => socket.on(eventName, handler));
 
   return () => {
     socket.off("connect", joinGroup);
+    socket.off("realtime:ready", handleReady);
+    socket.off("disconnect", handleDisconnect);
     events.forEach((eventName) => socket.off(eventName, handler));
   };
 }

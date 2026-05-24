@@ -9,7 +9,9 @@ import {
   Send,
   ScanLine,
   TrendingUp,
-  Users
+  Users,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -79,6 +81,8 @@ export function Dashboard({ session, onLogout }) {
   const [isReceiptSaving, setIsReceiptSaving] = useState(false);
   const [isReceiptUploading, setIsReceiptUploading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState("connecting");
+  const [lastRealtimeEvent, setLastRealtimeEvent] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -88,8 +92,12 @@ export function Dashboard({ session, onLogout }) {
   useEffect(() => {
     if (!data?.activeGroup?.id) return undefined;
 
-    return subscribeToRealtime(data.activeGroup.id, () => {
-      refresh(data.activeGroup.id);
+    return subscribeToRealtime(data.activeGroup.id, {
+      onStatus: setRealtimeStatus,
+      onEvent(event) {
+        setLastRealtimeEvent(event.type.replace(":", " "));
+        refresh(data.activeGroup.id);
+      }
     });
   }, [data?.activeGroup?.id]);
 
@@ -431,6 +439,13 @@ export function Dashboard({ session, onLogout }) {
             <h1>{data.activeGroup.name}</h1>
           </div>
           <div className="topbar-actions">
+            <div className={`realtime-status ${realtimeStatus}`}>
+              {realtimeStatus === "connected" ? <Wifi size={16} /> : <WifiOff size={16} />}
+              <div>
+                <strong>{realtimeStatus === "connected" ? "Live sync" : "Syncing"}</strong>
+                <p>{lastRealtimeEvent || "Realtime ready"}</p>
+              </div>
+            </div>
             <div className="current-user">
               <span>{session?.user?.avatar ?? data.currentUser.avatar}</span>
               <div>

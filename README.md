@@ -10,11 +10,11 @@
 ![Node.js](https://img.shields.io/badge/Backend-Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/API-Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/UI-Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Custom CSS](https://img.shields.io/badge/UI-Custom_CSS-1572B6?style=for-the-badge&logo=css3&logoColor=white)
 ![AI OCR](https://img.shields.io/badge/AI-OCR_Receipt_Scanner-FF6F00?style=for-the-badge&logo=google&logoColor=white)
 ![Razorpay](https://img.shields.io/badge/Payments-Razorpay_Test_Mode-02042B?style=for-the-badge&logo=razorpay&logoColor=white)
 
-![Status](https://img.shields.io/badge/Status-Planning_&_Architecture-blueviolet?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Production--Ready_MVP-success?style=flat-square)
 ![Difficulty](https://img.shields.io/badge/Difficulty-Medium--Hard-red?style=flat-square)
 ![Resume Project](https://img.shields.io/badge/Resume_Project-Placement_Level-success?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
@@ -27,8 +27,9 @@
 [Features](#-features) •
 [Tech Stack](#-tech-stack) •
 [Architecture](#-system-architecture) •
+[Production Systems](#-production-systems) •
 [Database](#-database-design) •
-[Build Phases](#-build-phases) •
+[Run Locally](#-run-locally) •
 [Resume Impact](#-resume-impact)
 
 </div>
@@ -75,6 +76,7 @@ Production deployment uses Vercel for the React client and Render for the Expres
 | Variable | Example | Purpose |
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | `https://splitsmart-ai-api.onrender.com/api` | Points the Vercel frontend to the Render API |
+| `VITE_SOCKET_URL` | `https://splitsmart-ai-api.onrender.com` | Optional Socket.IO origin; defaults to the API origin derived from `VITE_API_BASE_URL` |
 
 ### Backend
 
@@ -96,7 +98,37 @@ Production deployment uses Vercel for the React client and Render for the Expres
 | `SMTP_USER` | Optional | Brevo SMTP login |
 | `SMTP_PASS` | Optional | Brevo SMTP key |
 
-Missing optional provider keys do not break local development. The app uses safe local/mock fallbacks for AI, Razorpay, Cloudinary, and email while clearly showing provider status in the UI.
+Missing optional provider keys do not break local development. The app uses safe local/mock fallbacks for AI, Razorpay, Cloudinary, email, and queues while clearly showing provider status in the UI.
+
+---
+
+## 🧪 Run Locally
+
+```bash
+npm install
+npm run dev
+```
+
+Open the Vite client at `http://localhost:5173` and use the demo login:
+
+```text
+email: vamshi@example.com
+password: password123
+```
+
+For the production-style local stack with Redis and PostgreSQL:
+
+```bash
+docker compose up --build
+```
+
+Useful verification commands:
+
+```bash
+npm test
+npm run test:jest
+npm run build
+```
 
 ---
 
@@ -278,6 +310,7 @@ AI-generated insights can explain behavior in natural language:
 | 🔄 Fetch API | API communication |
 | 📊 Recharts | Analytics charts |
 | ✅ Vite | Production build tooling |
+| 🔌 Socket.IO Client | Live dashboard refresh after expense, settlement, and notification events |
 
 ### Backend
 
@@ -344,6 +377,43 @@ flowchart TD
     PAY --> UPI[UPI intent]
     API --> WS
 ```
+
+---
+
+## ⚙️ Production Systems
+
+### Redis + BullMQ Queue
+
+SplitSmart AI now includes a production-style background job layer:
+
+| Queue Job | Trigger | What It Does |
+| --- | --- | --- |
+| `reminder-email` | User sends expense reminders | Sends reminder email through SMTP/Brevo, updates notification status, persists state, broadcasts a realtime notification update |
+| `settlement-processing` | Razorpay/manual settlement is completed | Processes settlement side effects, persists state, broadcasts settlement progress |
+
+When `REDIS_URL` is configured, jobs run through BullMQ and Redis with retry/backoff. When Redis is not configured, the app uses an inline worker fallback so local development and demos still work correctly.
+
+### WebSockets
+
+The API initializes a Socket.IO gateway on the same HTTP server as Express. The React app subscribes to the active group and refreshes the dashboard when these events arrive:
+
+| Event | Purpose |
+| --- | --- |
+| `expense:created` | Refreshes balances, expenses, analytics, and settlements after a new expense or receipt expense |
+| `settlement:updated` | Refreshes payment history and outstanding settlements after UPI/manual/Razorpay actions |
+| `settlement:processed` | Confirms queued settlement processing completed |
+| `notification:created` | Refreshes reminder history after reminder jobs are queued |
+| `notification:updated` | Refreshes reminder delivery state after email processing |
+
+The dashboard also shows a live-sync status badge so the realtime connection is visible in the app.
+
+### Docker + CI/CD
+
+| File | Purpose |
+| --- | --- |
+| `Dockerfile` | Builds a production API image |
+| `docker-compose.yml` | Runs API, React client, Redis, and PostgreSQL locally |
+| `.github/workflows/ci.yml` | Runs server unit tests, Jest/Supertest integration tests, and the Vite build on pull requests and pushes to `main` |
 
 ---
 
@@ -415,7 +485,9 @@ erDiagram
 | ⚖️ Phase 9 | Disputes | Raise, comment, resolve disputes |
 | 📊 Phase 10 | Analytics | Spending dashboard |
 | 🤖 Phase 11 | AI insights | Natural language spending insights |
-| 🚀 Phase 12 | Polish + deploy | Testing, seed data, deployment, demo |
+| ⚡ Phase 12 | Realtime systems | Socket.IO dashboard updates |
+| 🧰 Phase 13 | Queues | BullMQ + Redis background jobs |
+| 🚀 Phase 14 | Polish + deploy | Testing, Docker, CI/CD, deployment, demo |
 
 ### Roadmap Flow
 
@@ -542,16 +614,9 @@ splitsmart-ai/
 | ⚛️ Frontend | Vercel / Netlify |
 | 🚂 Backend | Render / Railway / Fly.io |
 | 🐘 PostgreSQL | Supabase / Neon / Railway / Render |
+| ⚡ Redis | Upstash / Railway / Render Redis |
 | 📸 File Storage | Cloudinary / S3 |
 | 🔐 Secrets | Platform environment variables |
-
-### Local Production Stack
-
-```bash
-docker compose up --build
-```
-
-Compose starts the API, Vite client, Redis, and PostgreSQL. The API uses `REDIS_URL` for BullMQ jobs and `DATABASE_URL` for durable demo state.
 
 ---
 

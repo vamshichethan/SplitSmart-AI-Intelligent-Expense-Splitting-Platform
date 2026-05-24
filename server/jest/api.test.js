@@ -90,3 +90,33 @@ describe("payment verification routes", () => {
     });
   });
 });
+
+describe("reminder queue routes", () => {
+  let token;
+
+  beforeAll(async () => {
+    const response = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "vamshi@example.com", password: "password123" });
+    token = response.body.token;
+  });
+
+  test("queues reminder notifications and processes them through the local fallback", async () => {
+    const dashboard = await request(app)
+      .get("/api/dashboard")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    const expense = dashboard.body.expenses.find((item) => item.id === "e1");
+
+    const response = await request(app)
+      .post(`/api/expenses/${expense.id}/reminders`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(201);
+
+    expect(response.body.notifications[0]).toMatchObject({
+      expenseId: expense.id,
+      provider: "local",
+      status: "smtp_not_configured"
+    });
+  });
+});
