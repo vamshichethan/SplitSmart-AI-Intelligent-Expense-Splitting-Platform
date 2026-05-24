@@ -62,8 +62,11 @@ Production deployment uses Vercel for the React client and Render for the Expres
 - Settlement graph engine that minimizes repayment transactions.
 - Real-world settlement actions: UPI intent copy, Razorpay Checkout for card/UPI/netbanking, and cash/manual confirmation.
 - Razorpay payment confirmation endpoint with signature verification when live/test keys are configured.
+- BullMQ + Redis queue support for reminder emails and settlement processing, with a safe inline fallback for local demos.
+- Socket.IO real-time updates for expenses, settlements, and notifications.
 - Brevo SMTP-compatible reminder emails with reminder history.
 - Dispute creation, comment threads, resolution workflow, analytics charts, and Gemini spending insights.
+- Docker, Docker Compose, and GitHub Actions CI for production-style delivery.
 
 ## 🔐 Environment Configuration
 
@@ -80,6 +83,7 @@ Production deployment uses Vercel for the React client and Render for the Expres
 | `CLIENT_ORIGIN` | Yes | Comma-separated allowed frontend origins for CORS |
 | `JWT_SECRET` | Yes | Signs JWT sessions |
 | `DATABASE_URL` | Recommended | PostgreSQL state persistence |
+| `REDIS_URL` | Optional | Redis connection for BullMQ reminder and settlement jobs |
 | `GEMINI_API_KEY` | Optional | Gemini receipt extraction and AI insights |
 | `GEMINI_MODEL` | Optional | Defaults to `gemini-2.0-flash` |
 | `RAZORPAY_KEY_ID` | Optional | Razorpay Checkout test/live key id |
@@ -286,6 +290,9 @@ AI-generated insights can explain behavior in natural language:
 | 📦 Multer | Receipt uploads |
 | 📧 Nodemailer | Email reminders |
 | 🧪 Zod / Joi | Request validation |
+| 🔌 Socket.IO | Real-time dashboard events |
+| 🧰 BullMQ | Redis-backed background jobs |
+| 🧪 Jest / Supertest | HTTP integration tests |
 
 ### Database and Services
 
@@ -293,6 +300,7 @@ AI-generated insights can explain behavior in natural language:
 | --- | --- |
 | 🐘 PostgreSQL | Relational database |
 | 🧾 PostgreSQL snapshot persistence | Durable deployed demo state |
+| ⚡ Redis | Queue backend for reminders and settlement jobs |
 | 🤖 Gemini API | AI receipt extraction and insights |
 | 💳 Razorpay | Test/live checkout orders and signature verification |
 | ☁️ Cloudinary | Receipt image storage |
@@ -304,31 +312,37 @@ AI-generated insights can explain behavior in natural language:
 
 ```mermaid
 flowchart TD
-    U[👤 User] --> FE[⚛️ React Frontend]
-    FE --> API[🚂 Node.js + Express API]
+    U[User] --> FE[React dashboard]
+    FE -->|REST requests| API[Express API]
+    FE <-->|Socket.IO events| WS[Realtime gateway]
 
-    API --> AUTH[🔐 Auth Service]
-    API --> EXP[💰 Expense Service]
-    API --> OCR[🧾 AI/OCR Service]
-    API --> PAY[💳 Payment Service]
-    API --> NOTIF[🔔 Notification Service]
-    API --> ANALYTICS[📊 Analytics Service]
-    API --> DISPUTE[⚖️ Dispute Service]
+    API --> AUTH[Auth module]
+    API --> EXP[Expense module]
+    API --> SETTLE[Settlement engine]
+    API --> PAY[Payment module]
+    API --> NOTIF[Notification module]
+    API --> OCR[Receipt/OCR module]
+    API --> ANALYTICS[Analytics + AI insights]
 
-    AUTH --> DB[(🐘 PostgreSQL)]
+    AUTH --> DB[(PostgreSQL snapshot store)]
     EXP --> DB
-    OCR --> DB
+    SETTLE --> DB
     PAY --> DB
     NOTIF --> DB
+    OCR --> DB
     ANALYTICS --> DB
-    DISPUTE --> DB
 
-    OCR --> AI[🤖 Gemini / OpenAI]
-    OCR --> VISION[👁️ OCR Engine]
-    PAY --> RZP[💳 Razorpay Test Mode]
-    PAY --> UPI[🇮🇳 UPI Intent]
-    NOTIF --> EMAIL[📧 Email]
-    NOTIF --> SMS[📱 SMS / WhatsApp Optional]
+    NOTIF -->|enqueue reminder-email| Q[(BullMQ)]
+    PAY -->|enqueue settlement-processing| Q
+    Q --> REDIS[(Redis)]
+    Q --> EMAIL[SMTP / Brevo]
+    Q --> WS
+
+    OCR --> GEMINI[Gemini]
+    OCR --> CLOUD[Cloudinary]
+    PAY --> RZP[Razorpay]
+    PAY --> UPI[UPI intent]
+    API --> WS
 ```
 
 ---
@@ -531,6 +545,14 @@ splitsmart-ai/
 | 📸 File Storage | Cloudinary / S3 |
 | 🔐 Secrets | Platform environment variables |
 
+### Local Production Stack
+
+```bash
+docker compose up --build
+```
+
+Compose starts the API, Vite client, Redis, and PostgreSQL. The API uses `REDIS_URL` for BullMQ jobs and `DATABASE_URL` for durable demo state.
+
 ---
 
 ## 🏆 Resume Impact
@@ -552,6 +574,7 @@ Built a full-stack expense management platform with group-based bill splitting, 
 | 📊 Analytics | Recharts dashboard and trends |
 | 🔔 Product thinking | Reminders, disputes, receipts, overdue status |
 | 🧪 Engineering maturity | Validation, tests, audit logs, deployment plan |
+| 🧱 Production systems | Redis queues, WebSockets, Docker, CI/CD |
 
 ```text
 Original Splitwise Clone: Easy → Medium

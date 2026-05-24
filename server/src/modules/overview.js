@@ -5,8 +5,9 @@ import { disputeComments, disputes, expenses, groups, notifications, payments, u
 import { requireAuth } from "../middleware/auth.js";
 import { generateAiInsights } from "../services/aiInsights.js";
 import { uploadReceiptImage } from "../services/cloudinary.js";
-import { sendReminderEmail } from "../services/email.js";
+import { enqueueReminderEmailJob, enqueueSettlementProcessingJob } from "../services/queue.js";
 import { extractReceiptDetails } from "../services/receiptExtraction.js";
+import { publishRealtimeEvent } from "../services/realtime.js";
 import { createRazorpayOrder, verifyRazorpaySignature } from "../services/razorpay.js";
 import { buildGroupAnalytics } from "../utils/analytics.js";
 import { applySettlementPayments, createUpiIntentLink, findOutstandingSettlement } from "../utils/payments.js";
@@ -263,6 +264,11 @@ overviewRouter.post("/groups/:groupId/expenses", (req, res) => {
   };
 
   expenses.unshift(expense);
+  publishRealtimeEvent({
+    type: "expense:created",
+    groupId: group.id,
+    payload: { expenseId: expense.id, title: expense.title, amount: expense.amount }
+  });
   res.status(201).json(hydrateExpense(expense));
 });
 
@@ -348,6 +354,11 @@ overviewRouter.post("/groups/:groupId/receipts/item-wise-expense", (req, res) =>
   };
 
   expenses.unshift(expense);
+  publishRealtimeEvent({
+    type: "expense:created",
+    groupId: group.id,
+    payload: { expenseId: expense.id, title: expense.title, amount: expense.amount }
+  });
   res.status(201).json(buildGroupDashboard(req.user, group));
 });
 
@@ -388,6 +399,7 @@ overviewRouter.post("/groups/:groupId/payments/upi-intent", (req, res) => {
   });
 
   payments.unshift(payment);
+  publishSettlementUpdate(group, payment);
   res.status(201).json({ payment: hydratePayment(payment), upiIntent });
 });
 
@@ -454,6 +466,13 @@ overviewRouter.post("/groups/:groupId/payments/razorpay/confirm", (req, res) => 
   };
 
   payments.unshift(payment);
+  publishSettlementUpdate(group, payment);
+  enqueueSettlementProcessingJob({
+    groupId: group.id,
+    paymentId: payment.id,
+    method: payment.method,
+    amount: payment.amount
+  }).catch((error) => console.error("Failed to queue settlement processing", error));
   res.status(201).json(buildGroupDashboard(req.user, group));
 });
 
@@ -486,6 +505,13 @@ overviewRouter.post("/groups/:groupId/payments/manual", (req, res) => {
   };
 
   payments.unshift(payment);
+  publishSettlementUpdate(group, payment);
+  enqueueSettlementProcessingJob({
+    groupId: group.id,
+    paymentId: payment.id,
+    method: payment.method,
+    amount: payment.amount
+  }).catch((error) => console.error("Failed to queue settlement processing", error));
   res.status(201).json(buildGroupDashboard(req.user, group));
 });
 
@@ -499,25 +525,35 @@ overviewRouter.post("/expenses/:expenseId/reminders", async (req, res, next) => 
   try {
     const group = groups.find((item) => item.id === expense.groupId);
     const reminders = [];
+    const reminderJobs = [];
 
     for (const reminder of buildExpenseReminders({ group, expense, users })) {
       const user = users.find((item) => item.id === reminder.userId);
-      const emailResult = await sendReminderEmail({
+      const notification = {
+        id: `n${notifications.length + reminders.length + 1}`,
+        ...reminder,
+        status: "queued",
+        provider: "queue",
+        createdAt: new Date().toISOString()
+      };
+
+      reminders.push(notification);
+      reminderJobs.push({
+        notificationId: notification.id,
+        groupId: group.id,
         to: user.email,
         subject: `SplitSmart reminder: ${expense.title}`,
         text: reminder.message
       });
-      reminders.push({
-        id: `n${notifications.length + reminders.length + 1}`,
-        ...reminder,
-        status: emailResult.skipped ? "smtp_not_configured" : "email_sent",
-        provider: emailResult.skipped ? "local" : "smtp",
-        providerMessage: emailResult.reason ?? emailResult.messageId,
-        createdAt: new Date().toISOString()
-      });
     }
 
     notifications.unshift(...reminders);
+    await Promise.all(reminderJobs.map((job) => enqueueReminderEmailJob(job)));
+    publishRealtimeEvent({
+      type: "notification:created",
+      groupId: group.id,
+      payload: { expenseId: expense.id, count: reminders.length }
+    });
     res.status(201).json(buildGroupDashboard(req.user, group));
   } catch (error) {
     next(error);
@@ -695,6 +731,21 @@ function validateOutstandingSettlement(group, payload) {
   }
 
   return payload;
+}
+
+function publishSettlementUpdate(group, payment) {
+  publishRealtimeEvent({
+    type: "settlement:updated",
+    groupId: group.id,
+    payload: {
+      paymentId: payment.id,
+      from: payment.from,
+      to: payment.to,
+      amount: payment.amount,
+      method: payment.method,
+      status: payment.status
+    }
+  });
 }
 
 function findOrCreateMember(payload) {

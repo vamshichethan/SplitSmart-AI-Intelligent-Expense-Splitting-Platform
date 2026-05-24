@@ -1,5 +1,9 @@
+import { io } from "socket.io-client";
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? API_BASE.replace(/\/api\/?$/, "");
 const TOKEN_KEY = "splitsmart.session";
+let socket;
 
 export function getStoredSession() {
   const raw = localStorage.getItem(TOKEN_KEY);
@@ -150,6 +154,33 @@ export async function resolveDispute(disputeId, payload) {
 
 export async function getAiInsights(groupId) {
   return request(`/groups/${groupId}/analytics/ai-insights`);
+}
+
+export function subscribeToRealtime(groupId, onEvent) {
+  if (!socket) {
+    socket = io(SOCKET_URL || undefined, {
+      transports: ["websocket", "polling"]
+    });
+  }
+
+  const events = ["expense:created", "settlement:updated", "settlement:processed", "notification:created", "notification:updated"];
+  const handler = (event) => {
+    if (!event.groupId || event.groupId === groupId) {
+      onEvent(event);
+    }
+  };
+  const joinGroup = () => socket.emit("group:join", groupId);
+
+  if (groupId) {
+    joinGroup();
+    socket.on("connect", joinGroup);
+  }
+  events.forEach((eventName) => socket.on(eventName, handler));
+
+  return () => {
+    socket.off("connect", joinGroup);
+    events.forEach((eventName) => socket.off(eventName, handler));
+  };
 }
 
 async function request(path, options = {}) {

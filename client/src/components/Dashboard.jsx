@@ -30,6 +30,7 @@ import {
   removeGroupMember,
   resolveDispute,
   sendExpenseReminders,
+  subscribeToRealtime,
   uploadReceiptImage
 } from "../services/api";
 import { ExpenseForm } from "./ExpenseForm";
@@ -83,6 +84,14 @@ export function Dashboard({ session, onLogout }) {
   useEffect(() => {
     refresh(selectedGroupId);
   }, [selectedGroupId]);
+
+  useEffect(() => {
+    if (!data?.activeGroup?.id) return undefined;
+
+    return subscribeToRealtime(data.activeGroup.id, () => {
+      refresh(data.activeGroup.id);
+    });
+  }, [data?.activeGroup?.id]);
 
   async function refresh(groupId = selectedGroupId) {
     try {
