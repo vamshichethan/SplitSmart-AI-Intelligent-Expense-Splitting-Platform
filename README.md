@@ -29,8 +29,7 @@
 [Architecture](#-system-architecture) •
 [Production Systems](#-production-systems) •
 [Database](#-database-design) •
-[Run Locally](#-run-locally) •
-[Resume Impact](#-resume-impact)
+[Run Locally](#-run-locally)
 
 </div>
 
@@ -617,36 +616,6 @@ splitsmart-ai/
 | ⚡ Redis | Upstash / Railway / Render Redis |
 | 📸 File Storage | Cloudinary / S3 |
 | 🔐 Secrets | Platform environment variables |
-
----
-
-## 🏆 Resume Impact
-
-### SplitSmart AI — AI-Powered Expense Splitting Platform
-
-Built a full-stack expense management platform with group-based bill splitting, AI-powered receipt scanning, item-wise expense allocation, payment reminders, settlement tracking, dispute management, and spending analytics. Implemented graph-based balance simplification to minimize transactions and integrated Razorpay test payments with secure JWT authentication.
-
-### Why This Is Placement-Level
-
-| Skill Area | Demonstrated Through |
-| --- | --- |
-| 💻 Full-stack development | React frontend + Express backend |
-| 🗄️ Database design | PostgreSQL relational schema |
-| 🔐 Auth | JWT, bcrypt, protected routes |
-| 🤖 AI integration | OCR and AI spending insights |
-| 🧮 DSA | Graph-based settlement simplification |
-| 💳 Payments | Razorpay test mode and UPI intent |
-| 📊 Analytics | Recharts dashboard and trends |
-| 🔔 Product thinking | Reminders, disputes, receipts, overdue status |
-| 🧪 Engineering maturity | Validation, tests, audit logs, deployment plan |
-| 🧱 Production systems | Redis queues, WebSockets, Docker, CI/CD |
-
-```text
-Original Splitwise Clone: Easy → Medium
-SplitSmart AI: Medium-Hard, Resume-Ready, Interview-Friendly
-```
-
----
 
 ## 🌟 Future Enhancements
 
